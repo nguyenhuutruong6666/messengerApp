@@ -1,0 +1,111 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useAuth } from '../context/AuthContext';
+
+const LoginScreen = ({ navigation }) => {
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+
+    const handleLogin = async () => {
+        if (!phone || !password) {
+            Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Map phone to email
+            const email = `${phone}@messenger.app`;
+            await login(email, password);
+            // Navigation is handled by AuthContext state change in AppNavigator
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Đăng nhập thất bại', 'Số điện thoại hoặc mật khẩu không đúng');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Messenger VN</Text>
+
+            <TextInput
+                style={styles.input}
+                placeholder="Số điện thoại"
+                placeholderTextColor="#aaa"
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={setPhone}
+            />
+
+            <TextInput
+                style={styles.input}
+                placeholder="Mật khẩu"
+                placeholderTextColor="#aaa"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+            />
+
+            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.buttonText}>Đăng nhập</Text>
+                )}
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.link}>Chưa có tài khoản? Đăng ký ngay</Text>
+            </TouchableOpacity>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 20,
+        backgroundColor: '#18191a', // Dark Background
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        marginBottom: 30,
+        textAlign: 'center',
+        color: '#0084ff',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#3a3b3c',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 15,
+        fontSize: 16,
+        backgroundColor: '#242526', // Dark Input
+        color: '#e4e6eb', // Light Text
+    },
+    button: {
+        backgroundColor: '#0084ff',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    link: {
+        color: '#0084ff',
+        textAlign: 'center',
+        fontSize: 14,
+    },
+});
+
+export default LoginScreen;
