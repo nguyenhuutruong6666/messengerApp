@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const RegisterScreen = ({ navigation }) => {
     const [fullName, setFullName] = useState('');
@@ -8,6 +9,7 @@ const RegisterScreen = ({ navigation }) => {
     const [gender, setGender] = useState('Nam'); // Default selection
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [inputLoading, setInputLoading] = useState(false);
 
     const { register } = useAuth();
@@ -48,11 +50,7 @@ const RegisterScreen = ({ navigation }) => {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#18191a' }}>
-            {/* Wrapped in View to keep button fixed at top if needed, or just scroll layout */}
             <ScrollView contentContainerStyle={styles.container}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backButtonText}>← Quay lại</Text>
-                </TouchableOpacity>
 
                 <Text style={styles.title}>Đăng Ký Tài Khoản</Text>
 
@@ -96,14 +94,19 @@ const RegisterScreen = ({ navigation }) => {
                     onChangeText={setPhone}
                 />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Mật khẩu"
-                    placeholderTextColor="#aaa"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
+                <View style={styles.passwordContainer}>
+                    <TextInput
+                        style={styles.passwordInput}
+                        placeholder="Mật khẩu"
+                        placeholderTextColor="#aaa"
+                        secureTextEntry={!showPassword}
+                        value={password}
+                        onChangeText={setPassword}
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                        <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#b0b3b8" />
+                    </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={inputLoading}>
                     {inputLoading ? (
@@ -124,8 +127,9 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         padding: 20,
+        paddingTop: 50,
         backgroundColor: '#18191a',
     },
     title: {
@@ -144,6 +148,24 @@ const styles = StyleSheet.create({
         fontSize: 16,
         backgroundColor: '#242526',
         color: '#e4e6eb',
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#3a3b3c',
+        borderRadius: 10,
+        marginBottom: 15,
+        backgroundColor: '#242526',
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 15,
+        fontSize: 16,
+        color: '#e4e6eb',
+    },
+    eyeIcon: {
+        padding: 10,
     },
     genderContainer: {
         marginBottom: 15,
@@ -195,16 +217,6 @@ const styles = StyleSheet.create({
         color: '#0084ff',
         textAlign: 'center',
         fontSize: 14,
-    },
-    backButton: {
-        alignSelf: 'flex-start',
-        marginBottom: 20,
-        padding: 10,
-    },
-    backButtonText: {
-        color: '#e4e6eb',
-        fontSize: 16,
-        fontWeight: '500',
     },
 });
 
