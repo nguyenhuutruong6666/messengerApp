@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getChatId, sendMessage, subscribeToMessages, markMessagesAsRead } from '../services/chatService';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
 
+import { Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 
 const ChatDetailScreen = ({ route }) => {
@@ -26,6 +27,21 @@ const ChatDetailScreen = ({ route }) => {
             title: friend.fullName,
             headerStyle: { backgroundColor: '#18191a' },
             headerTintColor: '#fff',
+            headerRight: () => (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+                    <TouchableOpacity
+                        onPress={() => Alert.alert('Thông báo', 'Tính năng gọi đang phát triển')}
+                        style={{ marginRight: 20 }}
+                    >
+                        <Ionicons name="call" size={24} color="#0084ff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => Alert.alert('Thông báo', 'Tính năng gọi video đang phát triển')}
+                    >
+                        <Ionicons name="videocam" size={24} color="#0084ff" />
+                    </TouchableOpacity>
+                </View>
+            ),
         });
         const unsubscribe = subscribeToMessages(chatId, (msgs) => {
             setMessages(msgs);
