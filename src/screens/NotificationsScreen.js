@@ -1,35 +1,56 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { getPendingRequests, acceptFriendRequest, rejectFriendRequest } from '../services/friendService';
+import { getPendingRequests, acceptFriendRequest, rejectFriendRequest, getMyAcceptedRequests } from '../services/friendService';
 import { getUserById } from '../services/userService';
 import { useFocusEffect } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
 
 const NotificationsScreen = () => {
     const { user } = useAuth();
-    const [requests, setRequests] = useState([]);
+    const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
-            fetchRequests();
+            fetchNotifications();
         }, [])
     );
 
-    const fetchRequests = async () => {
+    const fetchNotifications = async () => {
         setLoading(true);
         try {
+            // 1. Get Pending Requests (Someone sent to me)
             const rawRequests = await getPendingRequests(user.uid);
 
-            // Enrich requests with sender details
-            const enrichedRequests = await Promise.all(
+            // 2. Get Accepted Requests (I sent, they accepted)
+            const acceptedRequests = await getMyAcceptedRequests(user.uid);
+
+            // 3. Process Pending Items
+            const enrichedPending = await Promise.all(
                 rawRequests.map(async (req) => {
                     const sender = await getUserById(req.fromUserId);
-                    return { ...req, sender };
+                    return { ...req, sender, type: 'friend_request' };
                 })
             );
-            setRequests(enrichedRequests);
+
+            // 4. Process Accepted Items
+            const enrichedAccepted = await Promise.all(
+                acceptedRequests.map(async (req) => {
+                    const acceptor = await getUserById(req.toUserId);
+                    return { ...req, sender: acceptor, type: 'friend_accepted' };
+                })
+            );
+
+            // 5. Merge and Sort by Date (newest first)
+            const allItems = [...enrichedPending, ...enrichedAccepted].sort((a, b) => {
+                // Handle missing timestamps gracefully
+                const timeA = (a.updatedAt || a.createdAt)?.seconds || 0;
+                const timeB = (b.updatedAt || b.createdAt)?.seconds || 0;
+                return timeB - timeA;
+            });
+
+            setNotifications(allItems);
         } catch (error) {
             console.error(error);
         } finally {
@@ -41,7 +62,7 @@ const NotificationsScreen = () => {
         try {
             await acceptFriendRequest(requestId);
             Alert.alert("Thành công", "Đã chấp nhận lời mời!");
-            fetchRequests(); // Refresh list
+            fetchNotifications(); // Refresh list
         } catch (error) {
             Alert.alert("Lỗi", error.message);
         }
@@ -50,32 +71,55 @@ const NotificationsScreen = () => {
     const handleReject = async (requestId) => {
         try {
             await rejectFriendRequest(requestId);
-            fetchRequests(); // Refresh list
+            fetchNotifications(); // Refresh list
         } catch (error) {
             Alert.alert("Lỗi", error.message);
         }
     };
 
-    const renderItem = ({ item }) => (
-        <View style={styles.requestItem}>
-            <UserAvatar uri={item.sender?.avatar} size={60} style={styles.avatar} />
-            <View style={styles.info}>
-                <Text style={styles.text}>
-                    <Text style={styles.name}>{item.sender?.fullName}</Text> đã gửi lời mời kết bạn.
-                </Text>
-                <Text style={styles.date}>{new Date(item.createdAt?.seconds * 1000).toLocaleDateString()}</Text>
+    const renderItem = ({ item }) => {
+        if (item.type === 'friend_request') {
+            return (
+                <View style={styles.requestItem}>
+                    <UserAvatar uri={item.sender?.avatar} size={60} style={styles.avatar} />
+                    <View style={styles.info}>
+                        <Text style={styles.text}>
+                            <Text style={styles.name}>{item.sender?.fullName}</Text> đã gửi lời mời kết bạn.
+                        </Text>
+                        <Text style={styles.date}>
+                            {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : ''}
+                        </Text>
 
-                <View style={styles.actions}>
-                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item.id)}>
-                        <Text style={styles.btnText}>Đồng ý</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
-                        <Text style={styles.btnText}>Từ chối</Text>
-                    </TouchableOpacity>
+                        <View style={styles.actions}>
+                            <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item.id)}>
+                                <Text style={styles.btnText}>Đồng ý</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
+                                <Text style={styles.btnText}>Từ chối</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
-            </View>
-        </View>
-    );
+            );
+        } else if (item.type === 'friend_accepted') {
+            return (
+                <View style={styles.requestItem}>
+                    <UserAvatar uri={item.sender?.avatar} size={60} style={styles.avatar} />
+                    <View style={styles.info}>
+                        <Text style={styles.text}>
+                            <Text style={styles.name}>{item.sender?.fullName}</Text> đã chấp nhận lời mời kết bạn của bạn.
+                        </Text>
+                        <Text style={styles.date}>
+                            {(item.updatedAt?.seconds)
+                                ? new Date(item.updatedAt.seconds * 1000).toLocaleString()
+                                : ''}
+                        </Text>
+                    </View>
+                </View>
+            );
+        }
+        return null;
+    };
 
     return (
         <View style={styles.container}>
@@ -84,7 +128,7 @@ const NotificationsScreen = () => {
                 <ActivityIndicator size="large" color="#0084ff" />
             ) : (
                 <FlatList
-                    data={requests}
+                    data={notifications}
                     keyExtractor={item => item.id}
                     renderItem={renderItem}
                     ListEmptyComponent={<Text style={styles.empty}>Không có thông báo mới.</Text>}

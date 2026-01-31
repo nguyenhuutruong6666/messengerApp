@@ -1,7 +1,7 @@
 import { db } from '../config/firebaseConfig';
-import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp, or, and } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp, or, and, orderBy } from 'firebase/firestore';
 
-// Send a friend request
+// Send a friend request (Handles retry on rejection)
 export const sendFriendRequest = async (fromUserId, toUserId) => {
     try {
         // Check if request already exists
@@ -13,8 +13,31 @@ export const sendFriendRequest = async (fromUserId, toUserId) => {
             )
         );
         const existing = await getDocs(q);
+
         if (!existing.empty) {
-            throw new Error("Request already exists or you are already friends.");
+            const existingDoc = existing.docs[0];
+            const data = existingDoc.data();
+
+            if (data.status === 'rejected') {
+                // Allow re-sending if it was rejected
+                const docRef = doc(db, 'friend_requests', existingDoc.id);
+                // Important: Ensure the sender is now the current user (in case A sent to B, B rejected, now A sends again OR B sends to A)
+                // Actually, simplest logic: If I find a rejected record, I can update it to pending.
+                // However, we should make sure 'fromUserId' is the current sender.
+
+                await updateDoc(docRef, {
+                    status: 'pending',
+                    fromUserId: fromUserId,
+                    toUserId: toUserId,
+                    createdAt: serverTimestamp(), // Update time to now
+                    updatedAt: serverTimestamp()
+                });
+                return true;
+            } else if (data.status === 'pending') {
+                throw new Error("Đang chờ xác nhận.");
+            } else if (data.status === 'accepted') {
+                throw new Error("Đã là bạn bè.");
+            }
         }
 
         await addDoc(collection(db, 'friend_requests'), {
@@ -30,7 +53,35 @@ export const sendFriendRequest = async (fromUserId, toUserId) => {
     }
 };
 
-// Get pending requests for a user
+// Check relationship between two users
+export const checkFriendRelationship = async (currentUserId, targetUserId) => {
+    try {
+        const q = query(
+            collection(db, 'friend_requests'),
+            or(
+                and(where('fromUserId', '==', currentUserId), where('toUserId', '==', targetUserId)),
+                and(where('fromUserId', '==', targetUserId), where('toUserId', '==', currentUserId))
+            )
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return null;
+
+        const data = snapshot.docs[0].data();
+        // If rejected, treat as null/none so we can resend, unless we want to show specific "Rejected" UI?
+        // Requirement: "khi bên kia từ chối thì có thể gửi lời mời lại được" -> So treat rejected as sendable.
+        // But for UI "Request Sent", we need to know if *I* sent it and it's pending.
+
+        return {
+            id: snapshot.docs[0].id,
+            ...data
+        };
+    } catch (error) {
+        console.error("Error checking relationship:", error);
+        return null;
+    }
+}
+
+// Get pending requests for a user (Incoming)
 export const getPendingRequests = async (userId) => {
     try {
         const q = query(
@@ -46,6 +97,22 @@ export const getPendingRequests = async (userId) => {
     }
 };
 
+// Get accepted requests initiated by me (for Notifications)
+export const getMyAcceptedRequests = async (userId) => {
+    try {
+        const q = query(
+            collection(db, 'friend_requests'),
+            where('fromUserId', '==', userId),
+            where('status', '==', 'accepted')
+        );
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Error getting accepted requests:", error);
+        return [];
+    }
+};
+
 // Accept friend request
 export const acceptFriendRequest = async (requestId) => {
     try {
@@ -54,9 +121,6 @@ export const acceptFriendRequest = async (requestId) => {
             status: 'accepted',
             updatedAt: serverTimestamp(),
         });
-        // In a real app, you might trigger a Cloud Function to create 'friend' records for both users
-        // or create a 'chat' room immediately.
-        // For this app, we will rely on querying accepted requests to list friends.
         return true;
     } catch (error) {
         console.error("Error accepting request:", error);
@@ -80,8 +144,6 @@ export const rejectFriendRequest = async (requestId) => {
 };
 
 // Get List of Friends (Accepted requests)
-// This is a bit complex with just one collection query if we are participant A or B.
-// We'll filter in memory or do two queries.
 export const getFriends = async (userId) => {
     try {
         // I sent and they accepted
