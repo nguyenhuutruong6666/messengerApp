@@ -6,6 +6,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
 
+import { useHeaderHeight } from '@react-navigation/elements';
+
 const ChatDetailScreen = ({ route }) => {
     const { friend } = route.params;
     const { user } = useAuth();
@@ -15,6 +17,7 @@ const ChatDetailScreen = ({ route }) => {
     const [sending, setSending] = useState(false);
     const flatListRef = useRef();
     const navigation = useNavigation();
+    const headerHeight = useHeaderHeight();
 
     const chatId = getChatId(user.uid, friend.id);
 
@@ -88,8 +91,8 @@ const ChatDetailScreen = ({ route }) => {
     return (
         <KeyboardAvoidingView
             style={styles.container}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 100}
+            behavior={Platform.OS === "ios" ? "padding" : "padding"}
+            keyboardVerticalOffset={headerHeight + (Platform.OS === 'android' ? -20 : 0)}
         >
             <FlatList
                 ref={flatListRef}
