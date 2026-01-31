@@ -92,7 +92,7 @@ const ChatDetailScreen = ({ route }) => {
         <KeyboardAvoidingView
             style={styles.container}
             behavior={Platform.OS === "ios" ? "padding" : "padding"}
-            keyboardVerticalOffset={headerHeight + (Platform.OS === 'android' ? -20 : 0)}
+            keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 100}
         >
             <FlatList
                 ref={flatListRef}
