@@ -26,12 +26,28 @@ const ProfileScreen = () => {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await logout();
-        } catch (error) {
-            console.error(error);
-        }
+    const handleLogout = () => {
+        Alert.alert(
+            "Đăng xuất",
+            "Bạn có chắc chắn muốn đăng xuất không?",
+            [
+                {
+                    text: "Hủy",
+                    style: "cancel"
+                },
+                {
+                    text: "Đăng xuất",
+                    onPress: async () => {
+                        try {
+                            await logout();
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    },
+                    style: 'destructive'
+                }
+            ]
+        );
     };
 
     if (loading) {
