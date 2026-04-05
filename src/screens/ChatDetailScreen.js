@@ -45,13 +45,10 @@ const ChatDetailScreen = ({ route }) => {
         });
         const unsubscribe = subscribeToMessages(chatId, (msgs) => {
             setMessages(msgs);
-            // Scroll to bottom on new message
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
         });
-
-        // Mark as read when entering chat
         markMessagesAsRead(chatId);
 
         return () => unsubscribe();

@@ -16,7 +16,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Authentication with AsyncStorage persistence
 export const auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage)
 });

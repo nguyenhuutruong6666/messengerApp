@@ -20,31 +20,21 @@ const NotificationsScreen = () => {
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            // 1. Get Pending Requests (Someone sent to me)
             const rawRequests = await getPendingRequests(user.uid);
-
-            // 2. Get Accepted Requests (I sent, they accepted)
             const acceptedRequests = await getMyAcceptedRequests(user.uid);
-
-            // 3. Process Pending Items
             const enrichedPending = await Promise.all(
                 rawRequests.map(async (req) => {
                     const sender = await getUserById(req.fromUserId);
                     return { ...req, sender, type: 'friend_request' };
                 })
             );
-
-            // 4. Process Accepted Items
             const enrichedAccepted = await Promise.all(
                 acceptedRequests.map(async (req) => {
                     const acceptor = await getUserById(req.toUserId);
                     return { ...req, sender: acceptor, type: 'friend_accepted' };
                 })
             );
-
-            // 5. Merge and Sort by Date (newest first)
             const allItems = [...enrichedPending, ...enrichedAccepted].sort((a, b) => {
-                // Handle missing timestamps gracefully
                 const timeA = (a.updatedAt || a.createdAt)?.seconds || 0;
                 const timeB = (b.updatedAt || b.createdAt)?.seconds || 0;
                 return timeB - timeA;
@@ -62,7 +52,7 @@ const NotificationsScreen = () => {
         try {
             await acceptFriendRequest(requestId);
             Alert.alert("Thành công", "Đã chấp nhận lời mời!");
-            fetchNotifications(); // Refresh list
+            fetchNotifications();
         } catch (error) {
             Alert.alert("Lỗi", error.message);
         }
@@ -71,7 +61,7 @@ const NotificationsScreen = () => {
     const handleReject = async (requestId) => {
         try {
             await rejectFriendRequest(requestId);
-            fetchNotifications(); // Refresh list
+            fetchNotifications();
         } catch (error) {
             Alert.alert("Lỗi", error.message);
         }

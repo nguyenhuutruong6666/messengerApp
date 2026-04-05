@@ -19,10 +19,8 @@ const LoginScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            // Map phone to email
             const email = `${phone}@messenger.app`;
             await login(email, password);
-            // Navigation is handled by AuthContext state change in AppNavigator
         } catch (error) {
             console.error(error);
             Alert.alert('Đăng nhập thất bại', 'Số điện thoại hoặc mật khẩu không đúng');

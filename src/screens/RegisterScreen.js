@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 const RegisterScreen = ({ navigation }) => {
     const [fullName, setFullName] = useState('');
     const [birthday, setBirthday] = useState('');
-    const [gender, setGender] = useState('Nam'); // Default selection
+    const [gender, setGender] = useState('Nam');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,7 +24,7 @@ const RegisterScreen = ({ navigation }) => {
         if (cleaned.length >= 2) {
             let day = parseInt(cleaned.slice(0, 2));
             if (day > 31) cleaned = '31' + cleaned.slice(2);
-            if (day === 0 && cleaned.length === 2) cleaned = '01'; // If user types 00, fix to 01
+            if (day === 0 && cleaned.length === 2) cleaned = '01';
         }
 
         // Enforce Month <= 12
@@ -49,7 +49,6 @@ const RegisterScreen = ({ navigation }) => {
     const navToLogin = () => navigation.navigate('Login');
 
     const handleRegister = async () => {
-        // Basic Validation
         if (!fullName || !birthday || !gender || !phone || !password || !confirmPassword) {
             Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
             return;
@@ -60,7 +59,6 @@ const RegisterScreen = ({ navigation }) => {
             return;
         }
 
-        // Strict Date Validation
         const dateParts = birthday.split('/');
         if (dateParts.length !== 3) {
             Alert.alert('Lỗi', 'Ngày sinh không đúng định dạng DD/MM/YYYY');
@@ -71,7 +69,6 @@ const RegisterScreen = ({ navigation }) => {
         const month = parseInt(dateParts[1], 10);
         const year = parseInt(dateParts[2], 10);
 
-        // Check ranges
         if (year < 1900 || year > new Date().getFullYear()) {
             Alert.alert('Lỗi', 'Năm sinh không hợp lệ');
             return;
@@ -81,7 +78,6 @@ const RegisterScreen = ({ navigation }) => {
             return;
         }
 
-        // Check days in month
         const daysInMonth = new Date(year, month, 0).getDate();
         if (day < 1 || day > daysInMonth) {
             Alert.alert('Lỗi', `Tháng ${month} chỉ có ${daysInMonth} ngày.`);
@@ -102,7 +98,7 @@ const RegisterScreen = ({ navigation }) => {
                 birthday,
                 gender,
                 phone,
-                avatar: '', // Default to empty to show person icon
+                avatar: '',
             };
 
             await register(email, password, additionalData);

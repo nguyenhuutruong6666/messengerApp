@@ -9,7 +9,6 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 
-// Helper to format time
 const formatTime = (timestamp) => {
     if (!timestamp) return '';
     const date = timestamp.toDate();
@@ -26,23 +25,16 @@ const formatTime = (timestamp) => {
 
 const MessagesScreen = ({ navigation }) => {
     const { user } = useAuth();
-    const [conversations, setConversations] = useState([]); // List of { friendInfo, chatData }
+    const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
             const fetchConversations = async () => {
-                // 1. Get Friends
                 const friendIds = await getFriends(user.uid);
-
-                // 2. Get Friend Details
                 const friendsData = await Promise.all(friendIds.map(id => getUserById(id)));
-
-                // 3. Setup Listeners for each friend's chat
                 const unsubscribes = [];
                 const chatsMap = {};
-
-                // Initialize with friend data first
                 const initialConvos = friendsData.map(friend => ({
                     id: friend.id,
                     friendInfo: friend,
@@ -50,7 +42,6 @@ const MessagesScreen = ({ navigation }) => {
                     updatedAt: null
                 }));
 
-                // Temporary state to hold updates
                 let currentConvos = [...initialConvos];
                 setConversations(currentConvos);
                 setLoading(false);
@@ -73,7 +64,6 @@ const MessagesScreen = ({ navigation }) => {
                                 }
                                 return c;
                             });
-                            // Sort by updated time (newest first)
                             return newConvos.sort((a, b) => {
                                 const timeA = a.updatedAt?.toMillis() || 0;
                                 const timeB = b.updatedAt?.toMillis() || 0;
@@ -164,7 +154,6 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
         marginBottom: 5,
         borderRadius: 12,
-        // Add hover effect style logic if possible, or just standard touchable
     },
     avatar: {
         width: 60,
@@ -194,7 +183,7 @@ const styles = StyleSheet.create({
     },
     message: {
         fontSize: 14,
-        color: '#b0b3b8', // Normal grey for read messages
+        color: '#b0b3b8',
         flex: 1,
     },
     unreadName: {

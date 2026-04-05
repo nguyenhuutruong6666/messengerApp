@@ -3,7 +3,6 @@ import { View, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const UserAvatar = ({ uri, size = 50, style }) => {
-    // Check if uri is valid and not the default ui-avatars one
     const isDefault = !uri || uri === '' || uri.includes('ui-avatars.com');
 
     if (isDefault) {

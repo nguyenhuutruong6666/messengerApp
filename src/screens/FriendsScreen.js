@@ -12,7 +12,7 @@ const FriendsScreen = () => {
     const navigation = useNavigation();
     const [searchPhone, setSearchPhone] = useState('');
     const [foundUser, setFoundUser] = useState(null);
-    const [relationshipData, setRelationshipData] = useState(null); // 'none', 'pending', 'accepted', 'rejected'
+    const [relationshipData, setRelationshipData] = useState(null);
     const [searchLoading, setSearchLoading] = useState(false);
     const [friends, setFriends] = useState([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
@@ -20,11 +20,10 @@ const FriendsScreen = () => {
     useFocusEffect(
         useCallback(() => {
             fetchFriends();
-            // If there is a found user, refresh status too (e.g. if they accepted in background)
             if (foundUser) {
                 checkRelationship(foundUser.id);
             }
-        }, [foundUser]) // Depend on foundUser so if it changes we check
+        }, [foundUser])
     );
 
     const fetchFriends = async () => {
@@ -53,7 +52,6 @@ const FriendsScreen = () => {
 
         try {
             if (searchPhone === user.email.replace('@messenger.app', '')) {
-                // Self check
                 Alert.alert("Thông tin", "Đây là số của bạn mà.");
                 return;
             }
@@ -82,20 +80,16 @@ const FriendsScreen = () => {
         try {
             await sendFriendRequest(user.uid, foundUser.id);
             Alert.alert("Thành công", "Đã gửi lời mời kết bạn!");
-
-            // Refresh relationship status
             await checkRelationship(foundUser.id);
         } catch (error) {
             Alert.alert("Lỗi", error.message);
         }
     };
 
-    // Determine UI state
     let actionElement = null;
 
     if (foundUser) {
         if (!relationshipData) {
-            // No relationship -> Show Add Button
             actionElement = (
                 <TouchableOpacity style={styles.addButton} onPress={handleSendRequest}>
                     <Text style={styles.addButtonText}>Kết bạn</Text>
@@ -112,15 +106,12 @@ const FriendsScreen = () => {
                 );
             } else if (status === 'pending') {
                 if (fromUserId === user.uid) {
-                    // I sent it -> Show "Sent"
                     actionElement = (
                         <View style={styles.pendingBadge}>
                             <Text style={styles.pendingText}>Đã gửi lời mời</Text>
                         </View>
                     );
                 } else {
-                    // They sent it -> Show "Accept" (Currently just text, or navigate to notifications)
-                    // Simplified: Show Text "Đang chờ chấp nhận" or link to notifications
                     actionElement = (
                         <View style={styles.pendingBadge}>
                             <Text style={styles.pendingText}>Họ đã gửi lời mời</Text>
@@ -128,7 +119,6 @@ const FriendsScreen = () => {
                     );
                 }
             } else if (status === 'rejected') {
-                // Rejected -> Can send again (Requirement)
                 actionElement = (
                     <TouchableOpacity style={styles.addButton} onPress={handleSendRequest}>
                         <Text style={styles.addButtonText}>Kết bạn</Text>
@@ -156,7 +146,6 @@ const FriendsScreen = () => {
             <View style={styles.container}>
                 <Text style={styles.title}>Thêm bạn bè</Text>
 
-                {/* Search Section */}
                 <View style={styles.searchContainer}>
                     <TextInput
                         style={styles.searchInput}
@@ -171,7 +160,6 @@ const FriendsScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Found User Result */}
                 {foundUser && (
                     <View style={styles.foundUserContainer}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>

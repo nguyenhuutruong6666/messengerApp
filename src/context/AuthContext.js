@@ -17,13 +17,11 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (usr) => {
             setUser(usr);
             if (usr) {
-                // Subscribe to user document changes
                 import('firebase/firestore').then(({ onSnapshot, doc }) => {
                     const unsubUserData = onSnapshot(doc(db, 'users', usr.uid), (doc) => {
                         setUserData(doc.data());
                     });
 
-                    // Register for Push Token and save to Firestore
                     registerForPushNotificationsAsync().then(token => {
                         if (token) {
                             updateDoc(doc(db, 'users', usr.uid), {
@@ -47,8 +45,6 @@ export const AuthProvider = ({ children }) => {
     const register = async (email, password, additionalData) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
-        // Create user document in Firestore
         await setDoc(doc(db, 'users', user.uid), {
             ...additionalData,
             createdAt: new Date().toISOString(),
