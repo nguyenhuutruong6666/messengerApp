@@ -3,17 +3,13 @@ import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, s
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { sendPushNotification } from './notificationService';
 
-// Generate a consistent Chat ID for two users
 export const getChatId = (uid1, uid2) => {
     return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
 };
 
-// Send a message
 export const sendMessage = async (chatId, text, imageUri, senderId) => {
     try {
         let imageUrl = null;
-
-        // 1. Upload Image if exists
         if (imageUri) {
             const response = await fetch(imageUri);
             const blob = await response.blob();
@@ -22,8 +18,6 @@ export const sendMessage = async (chatId, text, imageUri, senderId) => {
             await uploadBytes(storageRef, blob);
             imageUrl = await getDownloadURL(storageRef);
         }
-
-        // 2. Add Message to Subcollection
         const messageData = {
             senderId,
             text: text || '',
@@ -34,7 +28,6 @@ export const sendMessage = async (chatId, text, imageUri, senderId) => {
         const messagesRef = collection(db, 'messages', chatId, 'chat_messages');
         await addDoc(messagesRef, messageData);
 
-        // 3. Update Chat Metadata
         const chatRef = doc(db, 'chats', chatId);
         await setDoc(chatRef, {
             lastMessage: text || (imageUrl ? 'Image sent' : ''),
@@ -44,7 +37,6 @@ export const sendMessage = async (chatId, text, imageUri, senderId) => {
             members: chatId.split('_')
         }, { merge: true });
 
-        // 4. Send Push Notification to Recipient
         const uids = chatId.split('_');
         const recipientId = uids.find(id => id !== senderId);
 
@@ -68,7 +60,6 @@ export const sendMessage = async (chatId, text, imageUri, senderId) => {
     }
 };
 
-// Mark messages as read
 export const markMessagesAsRead = async (chatId) => {
     try {
         const chatRef = doc(db, 'chats', chatId);
@@ -80,7 +71,6 @@ export const markMessagesAsRead = async (chatId) => {
     }
 };
 
-// Subscribe to messages
 export const subscribeToMessages = (chatId, callback) => {
     const q = query(
         collection(db, 'messages', chatId, 'chat_messages'),

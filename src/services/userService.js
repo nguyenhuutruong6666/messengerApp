@@ -10,7 +10,6 @@ export const searchUserByPhone = async (phone) => {
             return null;
         }
 
-        // Attempt to return the first match (phone should be unique)
         const userDoc = querySnapshot.docs[0];
         return { id: userDoc.id, ...userDoc.data() };
     } catch (error) {

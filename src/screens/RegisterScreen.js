@@ -54,6 +54,11 @@ const RegisterScreen = ({ navigation }) => {
             return;
         }
 
+        if (password.length < 6) {
+            Alert.alert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự');
+            return;
+        }
+
         if (password !== confirmPassword) {
             Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
             return;

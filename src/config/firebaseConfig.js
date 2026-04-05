@@ -5,13 +5,13 @@ import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDpMeaxIOsDUzJH4hvLy94je7paJSz5NNY",
+    apiKey: "AIzaSyArI7eQTDlIIgHzE74SLh2byDrUk7x6wRA",
     authDomain: "messengerapp-48b7a.firebaseapp.com",
     projectId: "messengerapp-48b7a",
     storageBucket: "messengerapp-48b7a.firebasestorage.app",
     messagingSenderId: "177372306203",
-    appId: "1:177372306203:web:85cd30f7abbd3f904851be",
-    measurementId: "G-LJ1H0YP56L"
+    appId: "1:177372306203:web:af69743c359a05434851be",
+    measurementId: "G-J3P1K9918D"
 };
 
 const app = initializeApp(firebaseConfig);

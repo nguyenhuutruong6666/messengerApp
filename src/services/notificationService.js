@@ -3,7 +3,6 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// Configure how notifications behave when the app is in foreground
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
@@ -36,8 +35,6 @@ export async function registerForPushNotificationsAsync() {
             return;
         }
 
-        // Get the Expo Push Token
-        // We use the projectId from app config if available, otherwise standard
         try {
             const projectId = Constants?.expoConfig?.extra?.eas?.projectId || Constants?.easConfig?.projectId;
 
@@ -49,17 +46,15 @@ export async function registerForPushNotificationsAsync() {
             token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
             console.log("Expo Push Token:", token);
         } catch (e) {
-            console.log("Error fetching push token:", e.message); // Log instead of error to avoid RedBox
+            console.log("Error fetching push token:", e.message);
         }
     } else {
-        // alert('Must use physical device for Push Notifications');
         console.log('Must use physical device for Push Notifications');
     }
 
     return token;
 }
 
-// Function to send a push notification via Expo API
 export async function sendPushNotification(expoPushToken, title, body, data = {}) {
     const message = {
         to: expoPushToken,
