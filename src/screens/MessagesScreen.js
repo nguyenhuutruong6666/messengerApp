@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import UserAvatar from '../components/UserAvatar';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { getUserById } from '../services/userService';
 import { getFriends } from '../services/friendService';
@@ -170,7 +171,7 @@ const MessagesScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <Text style={styles.headerTitle}>Đoạn chat</Text>
             {loading ? (
                 <>
@@ -193,7 +194,7 @@ const MessagesScreen = ({ navigation }) => {
                     }
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 

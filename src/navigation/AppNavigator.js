@@ -1,10 +1,13 @@
 import React, { useEffect, useRef } from 'react';
+import { useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import MessagesScreen from '../screens/MessagesScreen';
@@ -16,20 +19,23 @@ import NewsScreen from '../screens/NewsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-const AuthStack = createNativeStackNavigator();
+const AuthStack = createNativeStackNavigator();
+
 const SplashScreen = () => {
     const dot1 = useRef(new Animated.Value(0.3)).current;
     const dot2 = useRef(new Animated.Value(0.3)).current;
     const dot3 = useRef(new Animated.Value(0.3)).current;
     const logoScale = useRef(new Animated.Value(0.8)).current;
 
-    useEffect(() => {
+    useEffect(() => {
+
         Animated.loop(
             Animated.sequence([
                 Animated.timing(logoScale, { toValue: 1.05, duration: 900, useNativeDriver: true }),
                 Animated.timing(logoScale, { toValue: 0.95, duration: 900, useNativeDriver: true }),
             ])
-        ).start();
+        ).start();
+
         const animateDot = (dot, delay) => Animated.loop(
             Animated.sequence([
                 Animated.delay(delay),
@@ -111,6 +117,7 @@ const AuthNavigator = () => (
 const MainTabs = () => (
     <Tab.Navigator
         screenOptions={({ route }) => ({
+            headerShown: false,
             headerStyle: { backgroundColor: '#18191a' },
             headerTintColor: '#fff',
             tabBarStyle: { backgroundColor: '#18191a', borderTopColor: '#3a3b3c' },
@@ -137,18 +144,40 @@ const MainTabs = () => (
     >
         <Tab.Screen name="News" component={NewsScreen} options={{ title: 'Tin tức' }} />
         <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: 'Tin nhắn' }} />
-        <Tab.Screen name="Friends" component={FriendsScreen} options={{ title: 'Kết bạn' }} />
-        <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Thông báo' }} />
         <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Cá nhân' }} />
     </Tab.Navigator>
 );
 
-const MainNavigator = () => (
-    <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#18191a' }, headerTintColor: '#fff' }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
-        <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ title: 'Đoạn chat' }} />
-    </Stack.Navigator>
-);
+const MainNavigator = () => {
+    const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+    useEffect(() => {
+        const requestPermissions = async () => {
+            try {
+                const mediaStatus = await ImagePicker.getMediaLibraryPermissionsAsync();
+                if (mediaStatus.status !== 'granted' && mediaStatus.canAskAgain) {
+                    await ImagePicker.requestMediaLibraryPermissionsAsync();
+                }
+                if (!cameraPermission?.granted && cameraPermission?.canAskAgain) {
+                    await requestCameraPermission();
+                }
+            } catch (error) {
+                console.log("Error requesting permissions:", error);
+            }
+        };
+
+        requestPermissions();
+    }, [cameraPermission]);
+
+    return (
+        <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: '#18191a' }, headerTintColor: '#fff' }}>
+            <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+            <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ title: 'Đoạn chat' }} />
+            <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+        </Stack.Navigator>
+    );
+};
 
 export default function AppNavigator() {
     const { user, loading } = useAuth();

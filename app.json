@@ -29,7 +29,19 @@
     },
     "owner": "nguyenhuutruong6666",
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép ứng dụng truy cập máy ảnh để chụp ảnh và chia sẻ."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép ứng dụng truy cập thư viện ảnh để bạn có thể gửi ảnh cho bạn bè."
+        }
+      ]
     ],
     "extra": {
       "eas": {

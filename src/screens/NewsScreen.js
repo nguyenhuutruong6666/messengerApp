@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, TouchableOpacity, Image, Alert, 
-    SafeAreaView, Dimensions, StatusBar, Platform, Modal, 
+    Dimensions, StatusBar, Platform, Modal, 
     FlatList, ActivityIndicator, ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
-import { postNews, subscribeToAllNews } from '../services/newsService';
+import { postNews, subscribeToAllNews, deleteNews } from '../services/newsService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -124,6 +125,28 @@ const NewsScreen = () => {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleDeleteNews = () => {
+        Alert.alert(
+            "Xóa tin",
+            "Bạn có chắc chắn muốn xóa tin này không?",
+            [
+                { text: "Hủy", style: "cancel" },
+                { 
+                    text: "Xóa", 
+                    style: "destructive", 
+                    onPress: async () => {
+                        try {
+                            await deleteNews(selectedNews.id);
+                            setSelectedNews(null);
+                        } catch (e) {
+                            Alert.alert("Lỗi", "Không thể xóa tin.");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const getLastName = (fullName) => {
@@ -313,17 +336,28 @@ const NewsScreen = () => {
                         <TouchableOpacity style={styles.closeDetailButton} onPress={() => setSelectedNews(null)}>
                             <Ionicons name="close" size={32} color="#fff" />
                         </TouchableOpacity>
-                        
+
                         <View style={styles.detailCard}>
                             <View style={styles.detailImageWrapper}>
                                 <Image source={{ uri: selectedNews.imageUrl }} style={styles.detailImage} />
                             </View>
                             <View style={styles.detailInfo}>
-                                <UserAvatar uri={selectedNews.userInfo?.avatar} size={40} style={{ marginRight: 12 }} />
-                                <View>
-                                    <Text style={styles.detailName}>{getLastName(selectedNews.userInfo?.fullName)}</Text>
-                                    <Text style={styles.detailTime}>{formatTime(selectedNews.createdAt)}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <UserAvatar uri={selectedNews.userInfo?.avatar} size={40} style={{ marginRight: 12 }} />
+                                    <View>
+                                        <Text style={styles.detailName}>{getLastName(selectedNews.userInfo?.fullName)}</Text>
+                                        <Text style={styles.detailTime}>{formatTime(selectedNews.createdAt)}</Text>
+                                    </View>
                                 </View>
+
+                                {selectedNews.userId === user.uid && (
+                                    <TouchableOpacity 
+                                        onPress={handleDeleteNews} 
+                                        style={styles.deleteButtonCircular}
+                                    >
+                                        <Ionicons name="trash" size={20} color="#ff3b30" />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -610,6 +644,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
         padding: 10,
     },
+
     detailCard: {
         width: SCREEN_WIDTH * 0.9,
         alignItems: 'center',
@@ -629,6 +664,7 @@ const styles = StyleSheet.create({
     detailInfo: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         width: '100%',
         paddingHorizontal: 10,
     },
@@ -641,6 +677,14 @@ const styles = StyleSheet.create({
         color: '#b0b3b8',
         fontSize: 14,
         marginTop: 2,
+    },
+    deleteButtonCircular: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255, 59, 48, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
     }
 });
 

@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TouchableWithoutFeedback, Keyboard, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { searchUserByPhone, getUserById } from '../services/userService';
 import { sendFriendRequest, getFriends, checkFriendRelationship } from '../services/friendService';
 import UserAvatar from '../components/UserAvatar';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -143,8 +145,13 @@ const FriendsScreen = () => {
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
-                <Text style={styles.title}>Thêm bạn bè</Text>
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Thêm bạn bè</Text>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="close" size={30} color="#e4e6eb" />
+                    </TouchableOpacity>
+                </View>
 
                 <View style={styles.searchContainer}>
                     <TextInput
@@ -186,7 +193,7 @@ const FriendsScreen = () => {
                         contentContainerStyle={{ paddingBottom: 20 }}
                     />
                 )}
-            </View>
+            </SafeAreaView>
         </TouchableWithoutFeedback>
     );
 };
@@ -197,11 +204,16 @@ const styles = StyleSheet.create({
         backgroundColor: '#18191a',
         padding: 15,
     },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
     title: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#e4e6eb',
-        marginBottom: 20,
     },
     searchContainer: {
         flexDirection: 'row',

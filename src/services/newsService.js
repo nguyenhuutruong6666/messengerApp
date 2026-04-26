@@ -1,5 +1,5 @@
 import { db } from '../config/firebaseConfig';
-import { ref, push, get, query, orderByChild, onValue } from 'firebase/database';
+import { ref, push, get, query, orderByChild, onValue, remove } from 'firebase/database';
 import { uploadImageToCloudinary } from './cloudinaryService';
 
 export const postNews = async (imageUri, userId) => {
@@ -18,25 +18,54 @@ export const postNews = async (imageUri, userId) => {
     }
 };
 
+export const deleteNews = async (newsId) => {
+    try {
+        await remove(ref(db, `news/${newsId}`));
+        return true;
+    } catch (error) {
+        console.error('Error deleting news:', error);
+        throw error;
+    }
+};
+
 export const subscribeToAllNews = (callback) => {
     const newsRef = query(ref(db, 'news'), orderByChild('createdAt'));
-    const unsubscribe = onValue(newsRef, async (snapshot) => {
+    const usersRef = ref(db, 'users');
+
+    let currentNewsList = [];
+    let currentUsersMap = {};
+
+    const updateCallback = () => {
+        const enrichedNews = currentNewsList.map(news => ({
+            ...news,
+            userInfo: currentUsersMap[news.userId] || null
+        }));
+        callback(enrichedNews);
+    };
+
+    const unsubscribeNews = onValue(newsRef, (snapshot) => {
         const newsList = [];
         if (snapshot.exists()) {
             snapshot.forEach(child => {
                 newsList.push({ id: child.key, ...child.val() });
             });
-
             newsList.sort((a, b) => b.createdAt - a.createdAt);
-
-            for (let i = 0; i < newsList.length; i++) {
-                const userSnap = await get(ref(db, `users/${newsList[i].userId}`));
-                if (userSnap.exists()) {
-                    newsList[i].userInfo = userSnap.val();
-                }
-            }
         }
-        callback(newsList);
+        currentNewsList = newsList;
+        updateCallback();
     });
-    return unsubscribe;
+
+    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
+        if (snapshot.exists()) {
+            currentUsersMap = snapshot.val();
+        } else {
+            currentUsersMap = {};
+        }
+        updateCallback();
+    });
+
+    return () => {
+        unsubscribeNews();
+        unsubscribeUsers();
+    };
 };

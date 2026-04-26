@@ -1,12 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { getPendingRequests, acceptFriendRequest, rejectFriendRequest, getMyAcceptedRequests } from '../services/friendService';
 import { getUserById } from '../services/userService';
 import { useFocusEffect } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
+import { Ionicons } from '@expo/vector-icons';
 
-const NotificationsScreen = () => {
+const NotificationsScreen = ({ navigation }) => {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -112,8 +114,13 @@ const NotificationsScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Thông Báo</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.title}>Thông Báo</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="close" size={30} color="#e4e6eb" />
+                </TouchableOpacity>
+            </View>
             {loading ? (
                 <ActivityIndicator size="large" color="#0084ff" />
             ) : (
@@ -124,7 +131,7 @@ const NotificationsScreen = () => {
                     ListEmptyComponent={<Text style={styles.empty}>Không có thông báo mới.</Text>}
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -134,10 +141,15 @@ const styles = StyleSheet.create({
         padding: 15,
         backgroundColor: '#18191a',
     },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 15,
         color: '#e4e6eb',
     },
     requestItem: {
