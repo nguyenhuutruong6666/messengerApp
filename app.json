@@ -27,14 +27,20 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "b3a1218f-1582-46ec-a050-ca26322e6182"
-      }
-    },
     "owner": "nguyenhuutruong6666",
     "plugins": [
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4713c757-b656-4d5b-986f-44a806348c03"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4713c757-b656-4d5b-986f-44a806348c03"
+    }
   }
 }
