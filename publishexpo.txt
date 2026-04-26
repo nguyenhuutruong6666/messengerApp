@@ -1,0 +1,3 @@
+npm install -g eas-cli
+eas login
+eas update --branch preview --message "Cập nhật tính năng NewsScreen"
