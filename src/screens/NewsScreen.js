@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-    View, Text, StyleSheet, TouchableOpacity, Image, Alert, 
-    Dimensions, StatusBar, Platform, Modal, 
+import {
+    View, Text, StyleSheet, TouchableOpacity, Image, Alert,
+    Dimensions, StatusBar, Platform, Modal,
     FlatList, ActivityIndicator, ScrollView, TextInput, KeyboardAvoidingView,
     TouchableWithoutFeedback, Keyboard
 } from 'react-native';
@@ -14,6 +14,9 @@ import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import { postNews, subscribeToAllNews, deleteNews } from '../services/newsService';
 import { getChatId, sendMessage } from '../services/chatService';
+import { getFriends } from '../services/friendService';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,7 +27,7 @@ const NewsScreen = () => {
     const [zoomIndex, setZoomIndex] = useState(0);
     const zoomLevels = [0, 0.05, 0.1];
     const zoomLabels = ['1x', '2x', '3x'];
-    
+
     const [permission, requestPermission] = useCameraPermissions();
     const [photo, setPhoto] = useState(null);
     const [isFocused, setIsFocused] = useState(false);
@@ -47,18 +50,20 @@ const NewsScreen = () => {
             hideSub.remove();
         };
     }, []);
-    
+
     const [historyVisible, setHistoryVisible] = useState(false);
     const [newsList, setNewsList] = useState([]);
-    const [selectedNews, setSelectedNews] = useState(null);
+    const [selectedNewsIndex, setSelectedNewsIndex] = useState(null);
     const [filterUserId, setFilterUserId] = useState(null);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
-    
+    const [friendIds, setFriendIds] = useState([]);
+
     const [replyText, setReplyText] = useState('');
     const [replySending, setReplySending] = useState(false);
     const navigation = useNavigation();
 
     const cameraRef = useRef(null);
+    const detailFlatListRef = useRef(null);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -76,6 +81,16 @@ const NewsScreen = () => {
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (user?.uid) {
+            getFriends(user.uid).then(ids => setFriendIds(ids)).catch(() => {});
+        }
+    }, [user?.uid]);
+
+    useEffect(() => {
+        setReplyText('');
+    }, [selectedNewsIndex]);
 
     if (!permission) {
         return <View style={styles.container} />;
@@ -95,7 +110,7 @@ const NewsScreen = () => {
     }
 
     const toggleCameraFacing = () => setFacing(current => (current === 'back' ? 'front' : 'back'));
-    
+
     const toggleFlash = () => {
         setFlash(current => {
             if (current === 'off') return 'on';
@@ -151,19 +166,19 @@ const NewsScreen = () => {
         }
     };
 
-    const handleDeleteNews = () => {
+    const handleDeleteNews = (newsItem) => {
         Alert.alert(
             "Xóa tin",
             "Bạn có chắc chắn muốn xóa tin này không?",
             [
                 { text: "Hủy", style: "cancel" },
-                { 
-                    text: "Xóa", 
-                    style: "destructive", 
+                {
+                    text: "Xóa",
+                    style: "destructive",
                     onPress: async () => {
                         try {
-                            await deleteNews(selectedNews.id);
-                            setSelectedNews(null);
+                            await deleteNews(newsItem.id);
+                            setSelectedNewsIndex(null);
                         } catch (e) {
                             Alert.alert("Lỗi", "Không thể xóa tin.");
                         }
@@ -173,20 +188,45 @@ const NewsScreen = () => {
         );
     };
 
-    const handleSendReply = async () => {
-        if (!replyText.trim() || !selectedNews) return;
+    const handleDownloadNews = async (imageUrl) => {
+        try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Lỗi', 'Cần quyền truy cập thư viện để lưu ảnh!');
+                return;
+            }
+
+            const filename = imageUrl.split('/').pop().split('?')[0] || 'downloaded_image.jpg';
+            const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+            const downloadedFile = await FileSystem.downloadAsync(imageUrl, fileUri);
+
+            if (downloadedFile.status === 200) {
+                await MediaLibrary.saveToLibraryAsync(downloadedFile.uri);
+                Alert.alert('Thành công', 'Đã lưu ảnh vào thư viện!');
+            } else {
+                Alert.alert('Lỗi', 'Không thể tải ảnh.');
+            }
+        } catch (error) {
+            console.error('Download error:', error);
+            Alert.alert('Lỗi', 'Đã xảy ra lỗi khi tải ảnh.');
+        }
+    };
+
+    const handleSendReply = async (currentNews) => {
+        if (!replyText.trim() || !currentNews) return;
         setReplySending(true);
-        const chatId = getChatId(user.uid, selectedNews.userId);
+        const chatId = getChatId(user.uid, currentNews.userId);
         try {
             await sendMessage(chatId, replyText, [], user.uid, {
-                newsId: selectedNews.id,
-                imageUrl: selectedNews.imageUrl
+                newsId: currentNews.id,
+                imageUrl: currentNews.imageUrl
             });
-            
+
             setReplyText('');
-            setSelectedNews(null);
+            setSelectedNewsIndex(null);
             setHistoryVisible(false);
-            navigation.navigate('ChatDetail', { friend: { ...selectedNews.userInfo, id: selectedNews.userId } });
+            navigation.navigate('ChatDetail', { friend: { ...currentNews.userInfo, id: currentNews.userId } });
         } catch (error) {
             console.error('Lỗi gửi reply:', error);
             Alert.alert("Lỗi", "Không thể gửi tin nhắn.");
@@ -212,23 +252,31 @@ const NewsScreen = () => {
         return `${hours}:${minutes} - ${day}/${month}/${year}`;
     };
 
+    const allowedUserIds = new Set([user.uid, ...friendIds]);
     const filterUsers = [];
     const userMap = new Set();
     newsList.forEach(news => {
-        if (!userMap.has(news.userId) && news.userInfo) {
+        if (!userMap.has(news.userId) && news.userInfo && allowedUserIds.has(news.userId)) {
             userMap.add(news.userId);
             filterUsers.push({
                 id: news.userId,
                 name: getLastName(news.userInfo.fullName),
-                avatar: news.userInfo.avatar
+                avatar: news.userInfo.avatar,
+                isSelf: news.userId === user.uid,
             });
         }
     });
+    filterUsers.sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0));
 
-    const displayedNews = filterUserId ? newsList.filter(n => n.userId === filterUserId) : newsList;
+    const displayedNews = filterUserId
+        ? newsList.filter(n => n.userId === filterUserId)
+        : newsList.filter(n => allowedUserIds.has(n.userId));
 
-    const renderHistoryItem = ({ item }) => (
-        <TouchableOpacity style={styles.historyImageContainer} onPress={() => setSelectedNews(item)}>
+    const renderHistoryItem = ({ item, index }) => (
+        <TouchableOpacity style={styles.historyImageContainer} onPress={() => {
+            setSelectedNewsIndex(index);
+            setReplyText('');
+        }}>
             <Image source={{ uri: item.imageUrl }} style={styles.historyImage} />
         </TouchableOpacity>
     );
@@ -242,14 +290,14 @@ const NewsScreen = () => {
                         <Image source={{ uri: photo }} style={styles.preview} />
                     </View>
                 </View>
-                
+
                 <View style={styles.previewActions}>
                     <TouchableOpacity style={styles.actionButton} onPress={retakePicture} disabled={uploading}>
                         <Ionicons name="trash-outline" size={24} color="#fff" />
                         <Text style={styles.actionText}>Xóa</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.actionButton, styles.primaryButton, uploading && { opacity: 0.7 }]} 
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.primaryButton, uploading && { opacity: 0.7 }]}
                         onPress={handleSavePicture}
                         disabled={uploading}
                     >
@@ -270,14 +318,14 @@ const NewsScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar hidden={false} barStyle="light-content" backgroundColor="#000" />
-            
+
             {/* Khung Camera bo tròn CẢ TRÊN VÀ DƯỚI */}
             <View style={styles.cameraContainer}>
                 <View style={styles.cameraWrapper}>
                     {isFocused && (
-                        <CameraView 
-                            style={styles.camera} 
-                            facing={facing} 
+                        <CameraView
+                            style={styles.camera}
+                            facing={facing}
                             flash={flash}
                             zoom={zoomLevels[zoomIndex]}
                             ref={cameraRef}
@@ -285,10 +333,10 @@ const NewsScreen = () => {
                             {/* Top Controls trong Camera */}
                             <View style={styles.topControls}>
                                 <TouchableOpacity style={styles.topIconBg} onPress={toggleFlash}>
-                                    <Ionicons 
-                                        name={flash === 'on' ? 'flash' : (flash === 'auto' ? 'flash-outline' : 'flash-off')} 
-                                        size={22} 
-                                        color="#fff" 
+                                    <Ionicons
+                                        name={flash === 'on' ? 'flash' : (flash === 'auto' ? 'flash-outline' : 'flash-off')}
+                                        size={22}
+                                        color="#fff"
                                     />
                                 </TouchableOpacity>
 
@@ -333,9 +381,9 @@ const NewsScreen = () => {
             </View>
 
             {/* Modal Lịch sử Tin Tức */}
-            <Modal 
-                visible={historyVisible} 
-                animationType="slide" 
+            <Modal
+                visible={historyVisible}
+                animationType="slide"
                 presentationStyle="pageSheet"
                 onRequestClose={() => setHistoryVisible(false)}
                 onDismiss={() => setHistoryVisible(false)}
@@ -355,12 +403,12 @@ const NewsScreen = () => {
                         ) : (
                             <Text style={styles.modalTitle}>Lịch sử</Text>
                         )}
-                        
+
                         <TouchableOpacity onPress={() => setHistoryVisible(false)}>
                             <Ionicons name="close-circle" size={32} color="#b0b3b8" />
                         </TouchableOpacity>
                     </View>
-                    
+
                     {displayedNews.length === 0 ? (
                         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                             <Text style={{ color: '#b0b3b8', fontSize: 16 }}>Không có tin tức nào để hiển thị.</Text>
@@ -376,18 +424,16 @@ const NewsScreen = () => {
                     )}
                 </View>
 
-
-
                 {/* View Chọn Filter đè trực tiếp lên Modal Lịch sử thay vì dùng Modal riêng (Tránh lỗi đơ iOS) */}
                 {filterModalVisible && (
                     <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
                         <TouchableOpacity style={styles.selectModalOverlay} activeOpacity={1} onPress={() => setFilterModalVisible(false)}>
                             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
-                            
+
                             <View style={styles.selectDropdown}>
                                 <Text style={styles.selectTitle}>Lọc theo người đăng</Text>
-                                
-                                <TouchableOpacity 
+
+                                <TouchableOpacity
                                     style={[styles.selectOption, filterUserId === null && styles.selectOptionActive]}
                                     onPress={() => { setFilterUserId(null); setFilterModalVisible(false); }}
                                 >
@@ -396,14 +442,19 @@ const NewsScreen = () => {
                                 </TouchableOpacity>
 
                                 {filterUsers.map(u => (
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         key={u.id}
                                         style={[styles.selectOption, filterUserId === u.id && styles.selectOptionActive]}
                                         onPress={() => { setFilterUserId(u.id); setFilterModalVisible(false); }}
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <UserAvatar uri={u.avatar} size={24} style={{marginRight: 10}} />
+                                            <UserAvatar uri={u.avatar} size={24} style={{ marginRight: 10 }} />
                                             <Text style={[styles.selectOptionText, filterUserId === u.id && styles.selectOptionTextActive]}>{u.name}</Text>
+                                            {u.isSelf && (
+                                                <View style={styles.selfBadge}>
+                                                    <Ionicons name="checkmark" size={11} color="#fff" />
+                                                </View>
+                                            )}
                                         </View>
                                         {filterUserId === u.id && <Ionicons name="checkmark" size={20} color="#0084ff" />}
                                     </TouchableOpacity>
@@ -413,44 +464,78 @@ const NewsScreen = () => {
                     </View>
                 )}
 
-                {/* View Xem Chi Tiết Tin Tức (Đè trực tiếp lên Modal Lịch sử) */}
-                {selectedNews && (
-                    <View style={[StyleSheet.absoluteFill, styles.detailContainer, { paddingBottom: keyboardHeight }]}>
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-                                <TouchableOpacity style={styles.closeDetailButton} onPress={() => setSelectedNews(null)}>
-                                    <Ionicons name="close" size={32} color="#fff" />
-                                </TouchableOpacity>
+                {/* View Xem Chi Tiết Tin Tức - Hỗ trợ vuốt trái/phải */}
+                {selectedNewsIndex !== null && displayedNews.length > 0 && (
+                    <View style={[StyleSheet.absoluteFill, styles.detailContainer]}>
+                        {/* Nút đóng */}
+                        <TouchableOpacity style={styles.closeDetailButton} onPress={() => setSelectedNewsIndex(null)}>
+                            <Ionicons name="close" size={20} color="#fff" />
+                        </TouchableOpacity>
 
-                                <View style={styles.detailCard}>
-                                    <View style={styles.detailImageWrapper}>
-                                        <Image source={{ uri: selectedNews.imageUrl }} style={styles.detailImage} />
-                                    </View>
-                                    <View style={styles.detailInfo}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <UserAvatar uri={selectedNews.userInfo?.avatar} size={40} style={{ marginRight: 12 }} />
-                                            <View>
-                                                <Text style={styles.detailName}>{getLastName(selectedNews.userInfo?.fullName)}</Text>
-                                                <Text style={styles.detailTime}>{formatTime(selectedNews.createdAt)}</Text>
+
+
+                        {/* Swipeable FlatList */}
+                        <FlatList
+                            ref={detailFlatListRef}
+                            data={displayedNews}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={item => item.id}
+                            getItemLayout={(_, index) => ({
+                                length: SCREEN_WIDTH,
+                                offset: SCREEN_WIDTH * index,
+                                index,
+                            })}
+                            initialScrollIndex={selectedNewsIndex}
+                            onMomentumScrollEnd={(e) => {
+                                const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                                setSelectedNewsIndex(index);
+                            }}
+                            renderItem={({ item }) => (
+                                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                    <View style={styles.detailPage}>
+                                        <View style={styles.detailCard}>
+                                            <View style={styles.detailImageWrapper}>
+                                                <Image source={{ uri: item.imageUrl }} style={styles.detailImage} />
+                                            </View>
+                                            <View style={styles.detailInfo}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <UserAvatar uri={item.userInfo?.avatar} size={40} style={{ marginRight: 12 }} />
+                                                    <View>
+                                                        <Text style={styles.detailName}>{getLastName(item.userInfo?.fullName)}</Text>
+                                                        <Text style={styles.detailTime}>{formatTime(item.createdAt)}</Text>
+                                                    </View>
+                                                </View>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <TouchableOpacity
+                                                        onPress={() => handleDownloadNews(item.imageUrl)}
+                                                        style={[styles.actionButtonCircular, { backgroundColor: 'rgba(255, 255, 255, 0.15)', marginRight: item.userId === user.uid ? 10 : 0 }]}
+                                                    >
+                                                        <Ionicons name="download-outline" size={20} color="#fff" />
+                                                    </TouchableOpacity>
+
+                                                    {item.userId === user.uid && (
+                                                        <TouchableOpacity
+                                                            onPress={() => handleDeleteNews(item)}
+                                                            style={[styles.actionButtonCircular, { backgroundColor: 'rgba(255, 59, 48, 0.15)' }]}
+                                                        >
+                                                            <Ionicons name="trash" size={20} color="#ff3b30" />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
                                             </View>
                                         </View>
-
-                                        {selectedNews.userId === user.uid && (
-                                            <TouchableOpacity 
-                                                onPress={handleDeleteNews} 
-                                                style={styles.deleteButtonCircular}
-                                            >
-                                                <Ionicons name="trash" size={20} color="#ff3b30" />
-                                            </TouchableOpacity>
-                                        )}
                                     </View>
-                                </View>
-                            </View>
-                        </TouchableWithoutFeedback>
-                        
+                                </TouchableWithoutFeedback>
+                            )}
+                        />
+
                         {/* Thanh reply nếu không phải ảnh của mình */}
-                        {selectedNews.userId !== user.uid && (
-                            <View style={styles.newsReplyContainer}>
+                        {displayedNews[selectedNewsIndex]?.userId !== user.uid && (
+                            <View style={[styles.newsReplyContainer, {
+                                paddingBottom: keyboardHeight > 0 ? keyboardHeight + 10 : (Platform.OS === 'ios' ? 20 : 10)
+                            }]}>
                                 <TextInput
                                     style={styles.newsReplyInput}
                                     placeholder="Trả lời tin này..."
@@ -459,9 +544,9 @@ const NewsScreen = () => {
                                     onChangeText={setReplyText}
                                     multiline
                                 />
-                                <TouchableOpacity 
-                                    style={styles.newsReplyButton} 
-                                    onPress={handleSendReply}
+                                <TouchableOpacity
+                                    style={styles.newsReplyButton}
+                                    onPress={() => handleSendReply(displayedNews[selectedNewsIndex])}
                                     disabled={replySending || !replyText.trim()}
                                 >
                                     {replySending ? (
@@ -540,7 +625,7 @@ const styles = StyleSheet.create({
         height: 86,
         borderRadius: 43,
         borderWidth: 4,
-        borderColor: '#ffc107', 
+        borderColor: '#ffc107',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -655,7 +740,6 @@ const styles = StyleSheet.create({
     selectModalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
         alignItems: 'center',
     },
     selectDropdown: {
@@ -664,6 +748,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         padding: 15,
         maxHeight: SCREEN_HEIGHT * 0.6,
+        marginTop: Platform.OS === 'ios' ? 90 : 70,
     },
     selectTitle: {
         color: '#b0b3b8',
@@ -710,16 +795,25 @@ const styles = StyleSheet.create({
 
     detailContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.9)',
+        backgroundColor: 'rgba(0,0,0,0.95)',
     },
     closeDetailButton: {
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 40 : 20,
-        right: 20,
-        zIndex: 10,
-        padding: 10,
+        top: Platform.OS === 'ios' ? 50 : 30,
+        right: 16,
+        zIndex: 20,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 14,
+        padding: 4,
     },
 
+    detailPage: {
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: Platform.OS === 'ios' ? 80 : 0,
+    },
     detailCard: {
         width: SCREEN_WIDTH * 0.9,
         alignItems: 'center',
@@ -753,11 +847,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 2,
     },
-    deleteButtonCircular: {
+    actionButtonCircular: {
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: 'rgba(255, 59, 48, 0.15)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -767,7 +860,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#242526',
         padding: 10,
         width: '100%',
-        paddingBottom: Platform.OS === 'ios' ? 20 : 10,
     },
     newsReplyInput: {
         flex: 1,
@@ -786,7 +878,16 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-    }
+    },
+    selfBadge: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: '#0084ff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 6,
+    },
 });
 
 export default NewsScreen;
