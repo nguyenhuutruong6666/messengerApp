@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "users": {
+      ".indexOn": ["phone"]
+    },
+    "friend_requests": {
+      ".indexOn": ["toUserId", "fromUserId"]
+    }
+  }
+}

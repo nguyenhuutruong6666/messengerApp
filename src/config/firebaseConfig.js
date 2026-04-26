@@ -1,17 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getDatabase } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyArI7eQTDlIIgHzE74SLh2byDrUk7x6wRA",
-    authDomain: "messengerapp-48b7a.firebaseapp.com",
-    projectId: "messengerapp-48b7a",
-    storageBucket: "messengerapp-48b7a.firebasestorage.app",
-    messagingSenderId: "177372306203",
-    appId: "1:177372306203:web:af69743c359a05434851be",
-    measurementId: "G-J3P1K9918D"
+    apiKey: "AIzaSyDpPQtsHUEHL7WAmklzbeC15PPOV6zbETk",
+    authDomain: "messta.firebaseapp.com",
+    projectId: "messta",
+    storageBucket: "messta.firebasestorage.app",
+    messagingSenderId: "168209576599",
+    appId: "1:168209576599:web:eaecd5434ca9e56a99efd2",
+    measurementId: "G-707WTY8T1B",
+    databaseURL: "https://messta-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -20,5 +20,4 @@ export const auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage)
 });
 
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+export const db = getDatabase(app);

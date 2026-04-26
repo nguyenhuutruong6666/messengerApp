@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
-import { ActivityIndicator, View } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -11,12 +12,100 @@ import RegisterScreen from '../screens/RegisterScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import ChatDetailScreen from '../screens/ChatDetailScreen'; // Will implement later
+import ChatDetailScreen from '../screens/ChatDetailScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const AuthStack = createNativeStackNavigator();
+
+// Splash screen thương hiệu thay cho spinner trắng
+const SplashScreen = () => {
+    const dot1 = useRef(new Animated.Value(0.3)).current;
+    const dot2 = useRef(new Animated.Value(0.3)).current;
+    const dot3 = useRef(new Animated.Value(0.3)).current;
+    const logoScale = useRef(new Animated.Value(0.8)).current;
+
+    useEffect(() => {
+        // Logo pulse
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(logoScale, { toValue: 1.05, duration: 900, useNativeDriver: true }),
+                Animated.timing(logoScale, { toValue: 0.95, duration: 900, useNativeDriver: true }),
+            ])
+        ).start();
+
+        // Dot wave
+        const animateDot = (dot, delay) => Animated.loop(
+            Animated.sequence([
+                Animated.delay(delay),
+                Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
+                Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+                Animated.delay(600),
+            ])
+        ).start();
+        animateDot(dot1, 0);
+        animateDot(dot2, 200);
+        animateDot(dot3, 400);
+    }, []);
+
+    return (
+        <View style={splash.container}>
+            <Animated.View style={[splash.logoBox, { transform: [{ scale: logoScale }] }]}>
+                <Ionicons name="chatbubble-ellipses" size={64} color="#0084ff" />
+            </Animated.View>
+            <Text style={splash.title}>Messa</Text>
+            <Text style={splash.subtitle}>Kết nối mọi người</Text>
+            <View style={splash.dotsRow}>
+                <Animated.View style={[splash.dot, { opacity: dot1 }]} />
+                <Animated.View style={[splash.dot, { opacity: dot2 }]} />
+                <Animated.View style={[splash.dot, { opacity: dot3 }]} />
+            </View>
+        </View>
+    );
+};
+
+const splash = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#18191a',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    logoBox: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+        backgroundColor: 'rgba(0,132,255,0.12)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+        borderWidth: 1.5,
+        borderColor: 'rgba(0,132,255,0.3)',
+    },
+    title: {
+        fontSize: 34,
+        fontWeight: 'bold',
+        color: '#e4e6eb',
+        letterSpacing: 1,
+        marginBottom: 6,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#b0b3b8',
+        marginBottom: 40,
+    },
+    dotsRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#0084ff',
+    },
+});
 
 const AuthNavigator = () => (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -24,8 +113,6 @@ const AuthNavigator = () => (
         <AuthStack.Screen name="Register" component={RegisterScreen} />
     </AuthStack.Navigator>
 );
-
-import { Ionicons } from '@expo/vector-icons';
 
 const MainTabs = () => (
     <Tab.Navigator
@@ -70,11 +157,7 @@ export default function AppNavigator() {
     const { user, loading } = useAuth();
 
     if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#0084ff" />
-            </View>
-        );
+        return <SplashScreen />;
     }
 
     return (

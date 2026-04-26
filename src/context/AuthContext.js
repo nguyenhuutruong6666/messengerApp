@@ -1,8 +1,9 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '../config/firebaseConfig';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, set, update, onValue } from 'firebase/database';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const AuthContext = createContext();
 
@@ -10,32 +11,66 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [userData, setUserData] = useState(null); // Firestore user data
+    const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (usr) => {
-            setUser(usr);
-            if (usr) {
-                import('firebase/firestore').then(({ onSnapshot, doc }) => {
-                    const unsubUserData = onSnapshot(doc(db, 'users', usr.uid), (doc) => {
-                        setUserData(doc.data());
-                    });
+        let unsubUserData = null;
+        let resolved = false;
 
-                    registerForPushNotificationsAsync().then(token => {
-                        if (token) {
-                            updateDoc(doc(db, 'users', usr.uid), {
-                                pushToken: token
-                            }).catch(err => console.log("Error updating push token:", err));
-                        }
-                    });
+        // Đọc cache — nếu đã login rồi thì tắt loading ngay
+        AsyncStorage.getItem('auth_uid').then(cachedUid => {
+            if (cachedUid && !resolved) setLoading(false);
+        });
+
+        // Timeout tối đa 3s: chỉ tắt loading, KHÔNG set user = null
+        const timeout = setTimeout(() => {
+            if (!resolved) setLoading(false);
+        }, 3000);
+
+        const unsubscribe = onAuthStateChanged(auth, (usr) => {
+            clearTimeout(timeout);
+            resolved = true;
+
+            setUser(usr);
+            setLoading(false);
+
+            // Lưu / xóa uid cache
+            if (usr) {
+                AsyncStorage.setItem('auth_uid', usr.uid);
+            } else {
+                AsyncStorage.removeItem('auth_uid');
+            }
+
+            // Hủy subscription cũ trước khi đăng ký mới
+            if (unsubUserData) {
+                unsubUserData();
+                unsubUserData = null;
+            }
+
+            if (usr) {
+                // Lắng nghe realtime user data từ RTDB
+                unsubUserData = onValue(ref(db, `users/${usr.uid}`), (snapshot) => {
+                    if (snapshot.exists()) setUserData(snapshot.val());
+                });
+
+                // Đăng ký push token chạy nền
+                registerForPushNotificationsAsync().then(token => {
+                    if (token) {
+                        update(ref(db, `users/${usr.uid}`), { pushToken: token })
+                            .catch(err => console.log('Error updating push token:', err));
+                    }
                 });
             } else {
                 setUserData(null);
             }
-            setLoading(false);
         });
-        return unsubscribe;
+
+        return () => {
+            clearTimeout(timeout);
+            unsubscribe();
+            if (unsubUserData) unsubUserData();
+        };
     }, []);
 
     const login = (email, password) => {
@@ -44,13 +79,12 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (email, password, additionalData) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await setDoc(doc(db, 'users', user.uid), {
+        const usr = userCredential.user;
+        await set(ref(db, `users/${usr.uid}`), {
             ...additionalData,
-            createdAt: new Date().toISOString(),
+            createdAt: Date.now(),
         });
-
-        return user;
+        return usr;
     };
 
     const logout = () => {
@@ -58,7 +92,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, userData, loading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

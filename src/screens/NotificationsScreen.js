@@ -35,8 +35,8 @@ const NotificationsScreen = () => {
                 })
             );
             const allItems = [...enrichedPending, ...enrichedAccepted].sort((a, b) => {
-                const timeA = (a.updatedAt || a.createdAt)?.seconds || 0;
-                const timeB = (b.updatedAt || b.createdAt)?.seconds || 0;
+                const timeA = (a.updatedAt || a.createdAt) || 0;
+                const timeB = (b.updatedAt || b.createdAt) || 0;
                 return timeB - timeA;
             });
 
@@ -77,7 +77,7 @@ const NotificationsScreen = () => {
                             <Text style={styles.name}>{item.sender?.fullName}</Text> đã gửi lời mời kết bạn.
                         </Text>
                         <Text style={styles.date}>
-                            {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : ''}
+                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
                         </Text>
 
                         <View style={styles.actions}>
@@ -100,8 +100,8 @@ const NotificationsScreen = () => {
                             <Text style={styles.name}>{item.sender?.fullName}</Text> đã chấp nhận lời mời kết bạn của bạn.
                         </Text>
                         <Text style={styles.date}>
-                            {(item.updatedAt?.seconds)
-                                ? new Date(item.updatedAt.seconds * 1000).toLocaleString()
+                            {item.updatedAt
+                                ? new Date(item.updatedAt).toLocaleString()
                                 : ''}
                         </Text>
                     </View>

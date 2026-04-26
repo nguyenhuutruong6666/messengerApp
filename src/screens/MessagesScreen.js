@@ -1,86 +1,145 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import UserAvatar from '../components/UserAvatar';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getUserById } from '../services/userService';
 import { getFriends } from '../services/friendService';
-import { getChatId } from '../services/chatService'; // Need to export this or recreate it
-import { doc, onSnapshot } from 'firebase/firestore';
+import { getChatId } from '../services/chatService';
+import { ref, onValue } from 'firebase/database';
 import { db } from '../config/firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 
+// Timestamp là số (Date.now())
 const formatTime = (timestamp) => {
     if (!timestamp) return '';
-    const date = timestamp.toDate();
+    const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
     const oneDay = 24 * 60 * 60 * 1000;
-
     if (diff < oneDay && now.getDate() === date.getDate()) {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-        return date.toLocaleDateString();
     }
+    return date.toLocaleDateString();
+};
+
+const SkeletonItem = () => {
+    const opacity = useRef(new Animated.Value(0.3)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+                Animated.timing(opacity, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
+
+    return (
+        <Animated.View style={[styles.conversationItem, { opacity }]}>
+            <View style={styles.skeletonAvatar} />
+            <View style={styles.contentContainer}>
+                <View style={styles.skeletonName} />
+                <View style={styles.skeletonMessage} />
+            </View>
+        </Animated.View>
+    );
 };
 
 const MessagesScreen = ({ navigation }) => {
     const { user } = useAuth();
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const unsubscribesRef = useRef([]);
+    const loadedRef = useRef(false); // true sau lần load đầu tiên
 
     useFocusEffect(
         useCallback(() => {
-            const fetchConversations = async () => {
-                const friendIds = await getFriends(user.uid);
-                const friendsData = await Promise.all(friendIds.map(id => getUserById(id)));
-                const unsubscribes = [];
-                const chatsMap = {};
-                const initialConvos = friendsData.map(friend => ({
-                    id: friend.id,
-                    friendInfo: friend,
-                    lastMessage: '',
-                    updatedAt: null
-                }));
+            let cancelled = false;
 
-                let currentConvos = [...initialConvos];
-                setConversations(currentConvos);
-                setLoading(false);
+            // Dọn listeners cũ trước khi load lại
+            unsubscribesRef.current.forEach(u => u());
+            unsubscribesRef.current = [];
 
-                friendsData.forEach((friend) => {
-                    const chatId = user.uid < friend.id ? `${user.uid}_${friend.id}` : `${friend.id}_${user.uid}`;
-                    const unsub = onSnapshot(doc(db, 'chats', chatId), (docSnap) => {
-                        const data = docSnap.exists() ? docSnap.data() : null;
+            const load = async () => {
+                try {
+                    // Chỉ hiện skeleton ở lần đầu — các lần sau refresh ngầm
+                if (!loadedRef.current) setLoading(true);
 
-                        setConversations(prevConvos => {
-                            const newConvos = prevConvos.map(c => {
-                                if (c.id === friend.id) {
-                                    return {
-                                        ...c,
-                                        lastMessage: data?.lastMessage || 'Chưa có tin nhắn',
-                                        lastSenderId: data?.lastSenderId,
-                                        isRead: data?.isRead,
-                                        updatedAt: data?.updatedAt || null
-                                    };
-                                }
-                                return c;
-                            });
-                            return newConvos.sort((a, b) => {
-                                const timeA = a.updatedAt?.toMillis() || 0;
-                                const timeB = b.updatedAt?.toMillis() || 0;
-                                return timeB - timeA;
-                            });
+                    const friendIds = await getFriends(user.uid);
+                    if (cancelled) return;
+
+                    if (friendIds.length === 0) {
+                        setConversations([]);
+                        setLoading(false);
+                        loadedRef.current = true;
+                        return;
+                    }
+
+                    // Tải song song tất cả user data của bạn bè
+                    const friendsData = await Promise.all(
+                        friendIds.map(id => getUserById(id))
+                    );
+                    if (cancelled) return;
+
+                    const validFriends = friendsData.filter(Boolean);
+
+                    // Merge với data cũ — giữ lastMessage/updatedAt đang hiển
+                    setConversations(prev => {
+                        const existing = {};
+                        prev.forEach(c => { existing[c.id] = c; });
+                        return validFriends.map(friend => ({
+                            id: friend.id,
+                            friendInfo: friend,
+                            lastMessage: existing[friend.id]?.lastMessage || 'Chưa có tin nhắn',
+                            updatedAt: existing[friend.id]?.updatedAt || null,
+                            lastSenderId: existing[friend.id]?.lastSenderId || null,
+                            isRead: existing[friend.id]?.isRead ?? true,
+                        })).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+                    });
+                    setLoading(false);
+                    loadedRef.current = true;
+
+                    // Đăng ký realtime RTDB listener cho từng chat
+                    const unsubs = validFriends.map(friend => {
+                        const chatId = getChatId(user.uid, friend.id);
+                        return onValue(ref(db, `chats/${chatId}`), (snap) => {
+                            if (cancelled) return;
+                            const data = snap.exists() ? snap.val() : null;
+                            setConversations(prev =>
+                                prev.map(c =>
+                                    c.id === friend.id
+                                        ? {
+                                            ...c,
+                                            lastMessage: data?.lastMessage || 'Chưa có tin nhắn',
+                                            lastSenderId: data?.lastSenderId || null,
+                                            isRead: data?.isRead ?? true,
+                                            updatedAt: data?.updatedAt || null,
+                                        }
+                                        : c
+                                ).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+                            );
                         });
                     });
-                    unsubscribes.push(unsub);
-                });
 
-                return () => unsubscribes.forEach(u => u());
+                    unsubscribesRef.current = unsubs;
+                } catch (err) {
+                    if (!cancelled) {
+                        console.error('Error loading conversations:', err);
+                        setLoading(false);
+                        loadedRef.current = true;
+                    }
+                }
             };
 
-            let cleanup;
-            fetchConversations().then(fn => cleanup = fn);
-            return () => { if (cleanup) cleanup(); };
-        }, [])
+            load();
+
+            // Cleanup khi mất focus hoặc unmount
+            return () => {
+                cancelled = true;
+                unsubscribesRef.current.forEach(u => u());
+                unsubscribesRef.current = [];
+            };
+        }, [user.uid])
     );
 
     const renderItem = ({ item }) => {
@@ -91,15 +150,23 @@ const MessagesScreen = ({ navigation }) => {
                 style={styles.conversationItem}
                 onPress={() => navigation.navigate('ChatDetail', { friend: item.friendInfo })}
             >
-                <UserAvatar uri={item.friendInfo.avatar} size={60} style={styles.avatar} />
+                <UserAvatar uri={item.friendInfo?.avatar} size={60} style={styles.avatar} />
                 <View style={styles.contentContainer}>
                     <View style={styles.topRow}>
-                        <Text style={[styles.name, isUnread && styles.unreadName]}>{item.friendInfo.fullName}</Text>
-                        <Text style={[styles.time, isUnread && styles.unreadTime]}>{formatTime(item.updatedAt)}</Text>
+                        <Text style={[styles.name, isUnread && styles.unreadName]}>
+                            {item.friendInfo?.fullName}
+                        </Text>
+                        <Text style={[styles.time, isUnread && styles.unreadTime]}>
+                            {formatTime(item.updatedAt)}
+                        </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={[styles.message, isUnread && styles.unreadMessage]} numberOfLines={1}>
-                            {item.lastSenderId === user.uid ? 'Bạn: ' : ''}{item.lastMessage}
+                        <Text
+                            style={[styles.message, isUnread && styles.unreadMessage]}
+                            numberOfLines={1}
+                        >
+                            {item.lastSenderId === user.uid ? 'Bạn: ' : ''}
+                            {item.lastMessage}
                         </Text>
                         {isUnread && <View style={styles.unreadDot} />}
                     </View>
@@ -112,7 +179,12 @@ const MessagesScreen = ({ navigation }) => {
         <View style={styles.container}>
             <Text style={styles.headerTitle}>Đoạn chat</Text>
             {loading ? (
-                <ActivityIndicator size="large" color="#0084ff" style={{ marginTop: 50 }} />
+                <>
+                    <SkeletonItem />
+                    <SkeletonItem />
+                    <SkeletonItem />
+                    <SkeletonItem />
+                </>
             ) : (
                 <FlatList
                     data={conversations}
@@ -161,6 +233,26 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         marginRight: 15,
         backgroundColor: '#3a3b3c',
+    },
+    skeletonAvatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        marginRight: 15,
+        backgroundColor: '#3a3b3c',
+    },
+    skeletonName: {
+        width: 140,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#3a3b3c',
+        marginBottom: 8,
+    },
+    skeletonMessage: {
+        width: 200,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#2d2e2f',
     },
     contentContainer: {
         flex: 1,

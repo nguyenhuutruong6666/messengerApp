@@ -1,34 +1,44 @@
 import { db } from '../config/firebaseConfig';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
+
+const isOfflineError = (error) =>
+    error?.code === 'unavailable' ||
+    error?.message?.includes('offline');
 
 export const searchUserByPhone = async (phone) => {
     try {
-        const q = query(collection(db, 'users'), where('phone', '==', phone));
-        const querySnapshot = await getDocs(q);
+        const q = query(ref(db, 'users'), orderByChild('phone'), equalTo(phone));
+        const snapshot = await get(q);
+        if (!snapshot.exists()) return null;
 
-        if (querySnapshot.empty) {
+        let result = null;
+        snapshot.forEach(child => {
+            result = { id: child.key, ...child.val() };
+        });
+        return result;
+    } catch (error) {
+        if (isOfflineError(error)) {
+            console.warn('RTDB offline — searchUserByPhone bỏ qua');
             return null;
         }
-
-        const userDoc = querySnapshot.docs[0];
-        return { id: userDoc.id, ...userDoc.data() };
-    } catch (error) {
-        console.error("Error searching user:", error);
+        console.error('Error searching user:', error);
         throw error;
     }
 };
 
 export const getUserById = async (userId) => {
     try {
-        const docRef = doc(db, 'users', userId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() };
-        } else {
+        const snapshot = await get(ref(db, `users/${userId}`));
+        if (snapshot.exists()) {
+            return { id: snapshot.key, ...snapshot.val() };
+        }
+        return null;
+    } catch (error) {
+        if (isOfflineError(error)) {
+            console.warn('RTDB offline — getUserById bỏ qua:', userId);
             return null;
         }
-    } catch (error) {
-        console.error("Error getting user:", error);
-        throw error;
+        console.error('Error getting user:', error);
+        return null;
     }
 };
