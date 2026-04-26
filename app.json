@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "messengerApp",
-    "slug": "messengerApp",
+    "name": "Messta",
+    "slug": "Messta",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/avt.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -14,15 +14,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.messengerApp"
+      "bundleIdentifier": "com.anonymous.messta"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/avt.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.messengerApp"
+      "package": "com.anonymous.messta"
     },
     "web": {
       "favicon": "./assets/favicon.png"

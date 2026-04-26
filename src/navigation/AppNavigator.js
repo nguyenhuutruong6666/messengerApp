@@ -48,7 +48,7 @@ const SplashScreen = () => {
             <Animated.View style={[splash.logoBox, { transform: [{ scale: logoScale }] }]}>
                 <Ionicons name="chatbubble-ellipses" size={64} color="#0084ff" />
             </Animated.View>
-            <Text style={splash.title}>Messa</Text>
+            <Text style={splash.title}>Messta</Text>
             <Text style={splash.subtitle}>Kết nối mọi người</Text>
             <View style={splash.dotsRow}>
                 <Animated.View style={[splash.dot, { opacity: dot1 }]} />
