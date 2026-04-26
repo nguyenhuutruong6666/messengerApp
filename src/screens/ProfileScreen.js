@@ -19,7 +19,7 @@ const ProfileScreen = () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            aspect: [1, 1],   // crop vuông cho avatar
+            aspect: [1, 1],  
             quality: 0.85,
         });
 
@@ -31,7 +31,7 @@ const ProfileScreen = () => {
         try {
             const avatarUrl = await uploadImageToCloudinary(uri, 'avatars');
             await update(ref(db, `users/${user.uid}`), { avatar: avatarUrl });
-            // userData tự cập nhật qua onValue trong AuthContext
+
         } catch (error) {
             console.error('Avatar upload error:', error);
             Alert.alert('Lỗi', 'Không thể cập nhật ảnh đại diện. Thử lại nhé.');

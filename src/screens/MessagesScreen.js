@@ -9,7 +9,6 @@ import { ref, onValue } from 'firebase/database';
 import { db } from '../config/firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 
-// Timestamp là số (Date.now())
 const formatTime = (timestamp) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
@@ -50,19 +49,18 @@ const MessagesScreen = ({ navigation }) => {
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const unsubscribesRef = useRef([]);
-    const loadedRef = useRef(false); // true sau lần load đầu tiên
+    const loadedRef = useRef(false);
 
     useFocusEffect(
         useCallback(() => {
             let cancelled = false;
 
-            // Dọn listeners cũ trước khi load lại
             unsubscribesRef.current.forEach(u => u());
             unsubscribesRef.current = [];
 
             const load = async () => {
                 try {
-                    // Chỉ hiện skeleton ở lần đầu — các lần sau refresh ngầm
+
                 if (!loadedRef.current) setLoading(true);
 
                     const friendIds = await getFriends(user.uid);
@@ -75,7 +73,6 @@ const MessagesScreen = ({ navigation }) => {
                         return;
                     }
 
-                    // Tải song song tất cả user data của bạn bè
                     const friendsData = await Promise.all(
                         friendIds.map(id => getUserById(id))
                     );
@@ -83,7 +80,6 @@ const MessagesScreen = ({ navigation }) => {
 
                     const validFriends = friendsData.filter(Boolean);
 
-                    // Merge với data cũ — giữ lastMessage/updatedAt đang hiển
                     setConversations(prev => {
                         const existing = {};
                         prev.forEach(c => { existing[c.id] = c; });
@@ -99,7 +95,6 @@ const MessagesScreen = ({ navigation }) => {
                     setLoading(false);
                     loadedRef.current = true;
 
-                    // Đăng ký realtime RTDB listener cho từng chat
                     const unsubs = validFriends.map(friend => {
                         const chatId = getChatId(user.uid, friend.id);
                         return onValue(ref(db, `chats/${chatId}`), (snap) => {
@@ -133,7 +128,6 @@ const MessagesScreen = ({ navigation }) => {
 
             load();
 
-            // Cleanup khi mất focus hoặc unmount
             return () => {
                 cancelled = true;
                 unsubscribesRef.current.forEach(u => u());

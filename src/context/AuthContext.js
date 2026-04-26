@@ -18,12 +18,10 @@ export const AuthProvider = ({ children }) => {
         let unsubUserData = null;
         let resolved = false;
 
-        // Đọc cache — nếu đã login rồi thì tắt loading ngay
         AsyncStorage.getItem('auth_uid').then(cachedUid => {
             if (cachedUid && !resolved) setLoading(false);
         });
 
-        // Timeout tối đa 3s: chỉ tắt loading, KHÔNG set user = null
         const timeout = setTimeout(() => {
             if (!resolved) setLoading(false);
         }, 3000);
@@ -35,26 +33,23 @@ export const AuthProvider = ({ children }) => {
             setUser(usr);
             setLoading(false);
 
-            // Lưu / xóa uid cache
             if (usr) {
                 AsyncStorage.setItem('auth_uid', usr.uid);
             } else {
                 AsyncStorage.removeItem('auth_uid');
             }
 
-            // Hủy subscription cũ trước khi đăng ký mới
             if (unsubUserData) {
                 unsubUserData();
                 unsubUserData = null;
             }
 
             if (usr) {
-                // Lắng nghe realtime user data từ RTDB
+
                 unsubUserData = onValue(ref(db, `users/${usr.uid}`), (snapshot) => {
                     if (snapshot.exists()) setUserData(snapshot.val());
                 });
 
-                // Đăng ký push token chạy nền
                 registerForPushNotificationsAsync().then(token => {
                     if (token) {
                         update(ref(db, `users/${usr.uid}`), { pushToken: token })

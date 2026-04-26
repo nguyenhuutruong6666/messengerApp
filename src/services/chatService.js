@@ -7,10 +7,9 @@ export const getChatId = (uid1, uid2) => {
     return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
 };
 
-// imageUris: string (compat) hoặc array
 export const sendMessage = async (chatId, text, imageUris, senderId) => {
     try {
-        // Upload song song tất cả ảnh lên Cloudinary
+
         let images = [];
         if (imageUris) {
             const uriArray = Array.isArray(imageUris) ? imageUris : [imageUris];
@@ -46,7 +45,6 @@ export const sendMessage = async (chatId, text, imageUris, senderId) => {
             members: { [uids[0]]: true, [uids[1]]: true },
         });
 
-        // Push notification
         const recipientId = uids.find(id => id !== senderId);
         if (recipientId) {
             const recipientSnap = await get(ref(db, `users/${recipientId}`));

@@ -4,9 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-// Screens
+import { Ionicons } from '@expo/vector-icons';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import MessagesScreen from '../screens/MessagesScreen';
@@ -14,28 +12,24 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import FriendsScreen from '../screens/FriendsScreen';
+import NewsScreen from '../screens/NewsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-const AuthStack = createNativeStackNavigator();
-
-// Splash screen thương hiệu thay cho spinner trắng
+const AuthStack = createNativeStackNavigator();
 const SplashScreen = () => {
     const dot1 = useRef(new Animated.Value(0.3)).current;
     const dot2 = useRef(new Animated.Value(0.3)).current;
     const dot3 = useRef(new Animated.Value(0.3)).current;
     const logoScale = useRef(new Animated.Value(0.8)).current;
 
-    useEffect(() => {
-        // Logo pulse
+    useEffect(() => {
         Animated.loop(
             Animated.sequence([
                 Animated.timing(logoScale, { toValue: 1.05, duration: 900, useNativeDriver: true }),
                 Animated.timing(logoScale, { toValue: 0.95, duration: 900, useNativeDriver: true }),
             ])
-        ).start();
-
-        // Dot wave
+        ).start();
         const animateDot = (dot, delay) => Animated.loop(
             Animated.sequence([
                 Animated.delay(delay),
@@ -125,7 +119,9 @@ const MainTabs = () => (
             tabBarIcon: ({ focused, color, size }) => {
                 let iconName;
 
-                if (route.name === 'Messages') {
+                if (route.name === 'News') {
+                    iconName = focused ? 'camera' : 'camera-outline';
+                } else if (route.name === 'Messages') {
                     iconName = focused ? 'chatbubble' : 'chatbubble-outline';
                 } else if (route.name === 'Friends') {
                     iconName = focused ? 'people' : 'people-outline';
@@ -139,6 +135,7 @@ const MainTabs = () => (
             },
         })}
     >
+        <Tab.Screen name="News" component={NewsScreen} options={{ title: 'Tin tức' }} />
         <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: 'Tin nhắn' }} />
         <Tab.Screen name="Friends" component={FriendsScreen} options={{ title: 'Kết bạn' }} />
         <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Thông báo' }} />

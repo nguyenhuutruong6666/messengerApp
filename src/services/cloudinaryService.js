@@ -35,7 +35,7 @@ export const uploadImageToCloudinary = (imageUri, folder = 'chat') => {
 
         xhr.onerror = () => reject(new Error('Lỗi mạng khi upload ảnh'));
         xhr.ontimeout = () => reject(new Error('Upload timeout'));
-        xhr.timeout = 30000; // 30 giây
+        xhr.timeout = 30000;
 
         xhr.send(formData);
     });

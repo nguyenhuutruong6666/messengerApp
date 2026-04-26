@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
-
 const RegisterScreen = ({ navigation }) => {
     const [fullName, setFullName] = useState('');
     const [birthday, setBirthday] = useState('');
@@ -18,23 +17,17 @@ const RegisterScreen = ({ navigation }) => {
     const { register } = useAuth();
 
     const handleDateChange = (text) => {
-        let cleaned = text.replace(/[^0-9]/g, '');
-
-        // Enforce Day <= 31
+        let cleaned = text.replace(/[^0-9]/g, '');
         if (cleaned.length >= 2) {
             let day = parseInt(cleaned.slice(0, 2));
             if (day > 31) cleaned = '31' + cleaned.slice(2);
             if (day === 0 && cleaned.length === 2) cleaned = '01';
-        }
-
-        // Enforce Month <= 12
+        }
         if (cleaned.length >= 4) {
             let month = parseInt(cleaned.slice(2, 4));
             if (month > 12) cleaned = cleaned.slice(0, 2) + '12' + cleaned.slice(4);
-            if (month === 0 && cleaned.length === 4) cleaned = cleaned.slice(0, 2) + '01'; // If 00 month, fix to 01
-        }
-
-        // Auto-format DD/MM/YYYY
+            if (month === 0 && cleaned.length === 4) cleaned = cleaned.slice(0, 2) + '01';
+        }
         let formatted = cleaned;
         if (cleaned.length > 2) {
             formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);

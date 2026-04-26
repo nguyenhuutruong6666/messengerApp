@@ -3,8 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const LoginScreen = ({ navigation }) => {
-    // ...
+const LoginScreen = ({ navigation }) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -78,7 +77,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         padding: 20,
-        backgroundColor: '#18191a', // Dark Background
+        backgroundColor: '#18191a',
     },
     title: {
         fontSize: 28,
@@ -94,8 +93,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 15,
         fontSize: 16,
-        backgroundColor: '#242526', // Dark Input
-        color: '#e4e6eb', // Light Text
+        backgroundColor: '#242526',
+        color: '#e4e6eb',
     },
     passwordContainer: {
         flexDirection: 'row',

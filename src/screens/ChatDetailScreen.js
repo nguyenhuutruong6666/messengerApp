@@ -14,9 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IMG_SIZE = 180; // kích thước ảnh preview trong chat
+const IMG_SIZE = 180;
 
-// ─── Full Screen Image Viewer ────────────────────────────────────────────────
 const ImageViewer = ({ visible, images, initialIndex, onClose }) => {
     const [index, setIndex] = useState(initialIndex);
 
@@ -96,13 +95,12 @@ const viewer = StyleSheet.create({
     counter: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
 
-// ─── Chat Detail Screen ───────────────────────────────────────────────────────
 const ChatDetailScreen = ({ route }) => {
     const { friend } = route.params;
     const { user } = useAuth();
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
-    const [images, setImages] = useState([]); // local URIs đang chờ gửi
+    const [images, setImages] = useState([]);
     const [sending, setSending] = useState(false);
     const [viewerVisible, setViewerVisible] = useState(false);
     const [viewerImages, setViewerImages] = useState([]);
@@ -142,12 +140,11 @@ const ChatDetailScreen = ({ route }) => {
         return () => unsubscribe();
     }, [chatId]);
 
-    // Chọn nhiều ảnh từ thư viện
     const pickImages = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsMultipleSelection: true,   // cho phép chọn nhiều ảnh
-            quality: 0.85,                   // không crop, giữ nguyên tỉ lệ
+            allowsMultipleSelection: true,  
+            quality: 0.85,                  
         });
         if (!result.canceled) {
             setImages(prev => [...prev, ...result.assets.map(a => a.uri)]);
@@ -181,7 +178,7 @@ const ChatDetailScreen = ({ route }) => {
 
     const renderMessage = ({ item }) => {
         const isMe = item.senderId === user.uid;
-        // Hỗ trợ cả `images` (array mới) lẫn `imageUrl` (string cũ)
+
         const imageList = item.images || (item.imageUrl ? [item.imageUrl] : []);
         const cols = imageList.length === 1 ? 1 : 2;
         const imgW = imageList.length === 1 ? IMG_SIZE * 1.2 : IMG_SIZE * 0.62;
@@ -320,7 +317,6 @@ const styles = StyleSheet.create({
     myTime: { color: 'rgba(255,255,255,0.7)' },
     theirTime: { color: '#b0b3b8' },
 
-    // Preview ảnh chờ gửi
     previewBar: {
         backgroundColor: '#242526',
         paddingHorizontal: 10,
@@ -334,7 +330,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10,
     },
 
-    // Input bar
     inputContainer: {
         flexDirection: 'row',
         padding: 10,
