@@ -2,16 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, TouchableOpacity, Image, Alert, 
     Dimensions, StatusBar, Platform, Modal, 
-    FlatList, ActivityIndicator, ScrollView
+    FlatList, ActivityIndicator, ScrollView, TextInput, KeyboardAvoidingView,
+    TouchableWithoutFeedback, Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import { postNews, subscribeToAllNews, deleteNews } from '../services/newsService';
+import { getChatId, sendMessage } from '../services/chatService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -27,12 +29,34 @@ const NewsScreen = () => {
     const [photo, setPhoto] = useState(null);
     const [isFocused, setIsFocused] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const showSub = Keyboard.addListener(showEvent, (e) => {
+            setKeyboardHeight(e.endCoordinates.height);
+        });
+        const hideSub = Keyboard.addListener(hideEvent, () => {
+            setKeyboardHeight(0);
+        });
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
     
     const [historyVisible, setHistoryVisible] = useState(false);
     const [newsList, setNewsList] = useState([]);
     const [selectedNews, setSelectedNews] = useState(null);
     const [filterUserId, setFilterUserId] = useState(null);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
+    
+    const [replyText, setReplyText] = useState('');
+    const [replySending, setReplySending] = useState(false);
+    const navigation = useNavigation();
 
     const cameraRef = useRef(null);
 
@@ -147,6 +171,28 @@ const NewsScreen = () => {
                 }
             ]
         );
+    };
+
+    const handleSendReply = async () => {
+        if (!replyText.trim() || !selectedNews) return;
+        setReplySending(true);
+        const chatId = getChatId(user.uid, selectedNews.userId);
+        try {
+            await sendMessage(chatId, replyText, [], user.uid, {
+                newsId: selectedNews.id,
+                imageUrl: selectedNews.imageUrl
+            });
+            
+            setReplyText('');
+            setSelectedNews(null);
+            setHistoryVisible(false);
+            navigation.navigate('ChatDetail', { friend: { ...selectedNews.userInfo, id: selectedNews.userId } });
+        } catch (error) {
+            console.error('Lỗi gửi reply:', error);
+            Alert.alert("Lỗi", "Không thể gửi tin nhắn.");
+        } finally {
+            setReplySending(false);
+        }
     };
 
     const getLastName = (fullName) => {
@@ -330,38 +376,7 @@ const NewsScreen = () => {
                     )}
                 </View>
 
-                {/* View Xem Chi Tiết Tin Tức (Đè trực tiếp lên Modal Lịch sử) */}
-                {selectedNews && (
-                    <View style={[StyleSheet.absoluteFill, styles.detailContainer]}>
-                        <TouchableOpacity style={styles.closeDetailButton} onPress={() => setSelectedNews(null)}>
-                            <Ionicons name="close" size={32} color="#fff" />
-                        </TouchableOpacity>
 
-                        <View style={styles.detailCard}>
-                            <View style={styles.detailImageWrapper}>
-                                <Image source={{ uri: selectedNews.imageUrl }} style={styles.detailImage} />
-                            </View>
-                            <View style={styles.detailInfo}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <UserAvatar uri={selectedNews.userInfo?.avatar} size={40} style={{ marginRight: 12 }} />
-                                    <View>
-                                        <Text style={styles.detailName}>{getLastName(selectedNews.userInfo?.fullName)}</Text>
-                                        <Text style={styles.detailTime}>{formatTime(selectedNews.createdAt)}</Text>
-                                    </View>
-                                </View>
-
-                                {selectedNews.userId === user.uid && (
-                                    <TouchableOpacity 
-                                        onPress={handleDeleteNews} 
-                                        style={styles.deleteButtonCircular}
-                                    >
-                                        <Ionicons name="trash" size={20} color="#ff3b30" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                )}
 
                 {/* View Chọn Filter đè trực tiếp lên Modal Lịch sử thay vì dùng Modal riêng (Tránh lỗi đơ iOS) */}
                 {filterModalVisible && (
@@ -395,6 +410,68 @@ const NewsScreen = () => {
                                 ))}
                             </View>
                         </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* View Xem Chi Tiết Tin Tức (Đè trực tiếp lên Modal Lịch sử) */}
+                {selectedNews && (
+                    <View style={[StyleSheet.absoluteFill, styles.detailContainer, { paddingBottom: keyboardHeight }]}>
+                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                                <TouchableOpacity style={styles.closeDetailButton} onPress={() => setSelectedNews(null)}>
+                                    <Ionicons name="close" size={32} color="#fff" />
+                                </TouchableOpacity>
+
+                                <View style={styles.detailCard}>
+                                    <View style={styles.detailImageWrapper}>
+                                        <Image source={{ uri: selectedNews.imageUrl }} style={styles.detailImage} />
+                                    </View>
+                                    <View style={styles.detailInfo}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <UserAvatar uri={selectedNews.userInfo?.avatar} size={40} style={{ marginRight: 12 }} />
+                                            <View>
+                                                <Text style={styles.detailName}>{getLastName(selectedNews.userInfo?.fullName)}</Text>
+                                                <Text style={styles.detailTime}>{formatTime(selectedNews.createdAt)}</Text>
+                                            </View>
+                                        </View>
+
+                                        {selectedNews.userId === user.uid && (
+                                            <TouchableOpacity 
+                                                onPress={handleDeleteNews} 
+                                                style={styles.deleteButtonCircular}
+                                            >
+                                                <Ionicons name="trash" size={20} color="#ff3b30" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
+                        
+                        {/* Thanh reply nếu không phải ảnh của mình */}
+                        {selectedNews.userId !== user.uid && (
+                            <View style={styles.newsReplyContainer}>
+                                <TextInput
+                                    style={styles.newsReplyInput}
+                                    placeholder="Trả lời tin này..."
+                                    placeholderTextColor="#aaa"
+                                    value={replyText}
+                                    onChangeText={setReplyText}
+                                    multiline
+                                />
+                                <TouchableOpacity 
+                                    style={styles.newsReplyButton} 
+                                    onPress={handleSendReply}
+                                    disabled={replySending || !replyText.trim()}
+                                >
+                                    {replySending ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <Ionicons name="send" size={20} color={replyText.trim() ? '#fff' : '#aaa'} />
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
                 )}
             </Modal>
@@ -634,8 +711,6 @@ const styles = StyleSheet.create({
     detailContainer: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.9)',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     closeDetailButton: {
         position: 'absolute',
@@ -683,6 +758,32 @@ const styles = StyleSheet.create({
         height: 36,
         borderRadius: 18,
         backgroundColor: 'rgba(255, 59, 48, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    newsReplyContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#242526',
+        padding: 10,
+        width: '100%',
+        paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    },
+    newsReplyInput: {
+        flex: 1,
+        backgroundColor: '#3a3b3c',
+        color: '#e4e6eb',
+        borderRadius: 20,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        marginRight: 10,
+        maxHeight: 100,
+    },
+    newsReplyButton: {
+        backgroundColor: '#0084ff',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
     }

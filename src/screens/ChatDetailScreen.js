@@ -12,6 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
 import { Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { db } from '../config/firebaseConfig';
+import { ref, get } from 'firebase/database';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const IMG_SIZE = 180;
@@ -95,6 +97,37 @@ const viewer = StyleSheet.create({
     counter: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
 
+const NewsReplyPreview = ({ newsReply, isMe }) => {
+    const [exists, setExists] = useState(true);
+
+    useEffect(() => {
+        const checkNews = async () => {
+            const snap = await get(ref(db, `news/${newsReply.newsId}`));
+            if (!snap.exists()) setExists(false);
+        };
+        checkNews();
+    }, [newsReply.newsId]);
+
+    if (!exists) {
+        return (
+            <View style={styles.deletedNewsContainer}>
+                <Ionicons name="alert-circle" size={16} color={isMe ? 'rgba(255,255,255,0.8)' : '#b0b3b8'} />
+                <Text style={[styles.deletedNewsText, isMe && { color: 'rgba(255,255,255,0.8)' }]}>Ảnh không tồn tại</Text>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.newsReplyPreview}>
+            <Image source={{ uri: newsReply.imageUrl }} style={styles.newsReplyImg} />
+            <View style={styles.newsReplyOverlay}>
+                <Ionicons name="camera" size={12} color="#fff" style={{ marginRight: 4 }} />
+                <Text style={styles.newsReplyLabel}>Đã trả lời tin</Text>
+            </View>
+        </View>
+    );
+};
+
 const ChatDetailScreen = ({ route }) => {
     const { friend } = route.params;
     const { user } = useAuth();
@@ -134,7 +167,6 @@ const ChatDetailScreen = ({ route }) => {
 
         const unsubscribe = subscribeToMessages(chatId, (msgs) => {
             setMessages(msgs);
-            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
         });
         markMessagesAsRead(chatId);
         return () => unsubscribe();
@@ -204,6 +236,11 @@ const ChatDetailScreen = ({ route }) => {
                         </View>
                     )}
 
+                    {/* News Reply Preview */}
+                    {item.newsReply && (
+                        <NewsReplyPreview newsReply={item.newsReply} isMe={isMe} />
+                    )}
+
                     {/* Text */}
                     {!!item.text && (
                         <Text style={[styles.messageText, isMe ? styles.myText : styles.theirText]}>
@@ -231,11 +268,11 @@ const ChatDetailScreen = ({ route }) => {
             >
                 <FlatList
                     ref={flatListRef}
-                    data={messages}
+                    data={[...messages].reverse()}
+                    inverted
                     keyExtractor={item => item.id}
                     renderItem={renderMessage}
                     contentContainerStyle={styles.listContent}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                 />
 
                 {/* Preview ảnh đang chờ gửi */}
@@ -359,6 +396,23 @@ const styles = StyleSheet.create({
         height: 42,
     },
     sendDisabled: { backgroundColor: '#3a3b3c' },
+    deletedNewsContainer: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 8, marginBottom: 4,
+    },
+    deletedNewsText: {
+        color: '#b0b3b8', fontSize: 12, marginLeft: 4, fontStyle: 'italic',
+    },
+    newsReplyPreview: {
+        marginBottom: 4, borderRadius: 8, overflow: 'hidden',
+        position: 'relative', width: IMG_SIZE * 0.7, height: IMG_SIZE * 0.7,
+    },
+    newsReplyImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+    newsReplyOverlay: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row', alignItems: 'center', padding: 4,
+    },
+    newsReplyLabel: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
 });
 
 export default ChatDetailScreen;

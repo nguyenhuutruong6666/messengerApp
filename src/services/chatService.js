@@ -7,7 +7,7 @@ export const getChatId = (uid1, uid2) => {
     return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
 };
 
-export const sendMessage = async (chatId, text, imageUris, senderId) => {
+export const sendMessage = async (chatId, text, imageUris, senderId, newsReply = null) => {
     try {
 
         let images = [];
@@ -27,6 +27,7 @@ export const sendMessage = async (chatId, text, imageUris, senderId) => {
             senderId,
             text: hasText ? text.trim() : '',
             images: hasImages ? images : null,
+            newsReply: newsReply ? newsReply : null,
             createdAt: Date.now(),
         };
 
