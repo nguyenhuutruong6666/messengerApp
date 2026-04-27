@@ -1,5 +1,5 @@
 import { db } from '../config/firebaseConfig';
-import { ref, push, get, update, onValue } from 'firebase/database';
+import { ref, push, get, update, onValue, remove } from 'firebase/database';
 import { uploadImageToCloudinary } from './cloudinaryService';
 import { sendPushNotification } from './notificationService';
 
@@ -85,4 +85,32 @@ export const subscribeToMessages = (chatId, callback) => {
         callback(messages);
     });
     return unsubscribe;
+};
+
+export const deleteMessageImage = async (chatId, messageId, imageIndex, messageData) => {
+    try {
+        if (messageData.images && Array.isArray(messageData.images)) {
+            const newImages = [...messageData.images];
+            newImages.splice(imageIndex, 1);
+            
+            if (newImages.length === 0 && !messageData.text && !messageData.newsReply) {
+                await remove(ref(db, `messages/${chatId}/${messageId}`));
+            } else {
+                await update(ref(db, `messages/${chatId}/${messageId}`), { 
+                    images: newImages.length > 0 ? newImages : null 
+                });
+            }
+        } else if (messageData.imageUrl) {
+            if (!messageData.text && !messageData.newsReply) {
+                await remove(ref(db, `messages/${chatId}/${messageId}`));
+            } else {
+                await update(ref(db, `messages/${chatId}/${messageId}`), { 
+                    imageUrl: null 
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error deleting image:', error);
+        throw error;
+    }
 };

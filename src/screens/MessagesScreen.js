@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import UserAvatar from '../components/UserAvatar';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { getUserById } from '../services/userService';
 import { getFriends } from '../services/friendService';
@@ -142,10 +143,14 @@ const MessagesScreen = ({ navigation }) => {
 
         return (
             <TouchableOpacity
-                style={styles.conversationItem}
+                style={[styles.conversationItem, isUnread && styles.conversationItemUnread]}
                 onPress={() => navigation.navigate('ChatDetail', { friend: item.friendInfo })}
+                activeOpacity={0.7}
             >
-                <UserAvatar uri={item.friendInfo?.avatar} size={60} style={styles.avatar} />
+                <View style={styles.avatarContainer}>
+                    <UserAvatar uri={item.friendInfo?.avatar} size={60} style={styles.avatar} />
+                </View>
+
                 <View style={styles.contentContainer}>
                     <View style={styles.topRow}>
                         <Text style={[styles.name, isUnread && styles.unreadName]}>
@@ -201,53 +206,62 @@ const MessagesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#18191a',
+        backgroundColor: '#121212',
         paddingTop: 10,
     },
     headerTitle: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        color: '#e4e6eb',
-        marginLeft: 15,
-        marginBottom: 15,
+        fontSize: 30,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        marginLeft: 18,
+        marginBottom: 16,
+        letterSpacing: 0.3,
     },
     listContent: {
-        paddingBottom: 20,
+        paddingBottom: 25,
+        paddingHorizontal: 8,
     },
     conversationItem: {
         flexDirection: 'row',
         padding: 12,
         alignItems: 'center',
-        marginHorizontal: 10,
-        marginBottom: 5,
-        borderRadius: 12,
+        marginBottom: 2,
+        borderRadius: 16,
+        backgroundColor: 'transparent',
+    },
+    conversationItemUnread: {
+        backgroundColor: '#1E1E1E',
+    },
+    avatarContainer: {
+        marginRight: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     avatar: {
         width: 60,
         height: 60,
         borderRadius: 30,
-        marginRight: 15,
-        backgroundColor: '#3a3b3c',
+        backgroundColor: '#2A2A2A',
     },
     skeletonAvatar: {
         width: 60,
         height: 60,
         borderRadius: 30,
-        marginRight: 15,
-        backgroundColor: '#3a3b3c',
+        marginRight: 14,
+        backgroundColor: '#1E1E1E',
     },
     skeletonName: {
         width: 140,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: '#3a3b3c',
-        marginBottom: 8,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#1E1E1E',
+        marginBottom: 10,
     },
     skeletonMessage: {
         width: 200,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#2d2e2f',
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#1A1A1A',
     },
     contentContainer: {
         flex: 1,
@@ -257,52 +271,54 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 6,
     },
     name: {
         fontSize: 17,
         fontWeight: '600',
-        color: '#e4e6eb',
+        color: '#E4E6EB',
     },
     time: {
-        fontSize: 12,
-        color: '#b0b3b8',
+        fontSize: 13,
+        color: '#A0A3A8',
     },
     message: {
-        fontSize: 14,
-        color: '#b0b3b8',
+        fontSize: 15,
+        color: '#A0A3A8',
         flex: 1,
     },
     unreadName: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontWeight: 'bold',
     },
     unreadMessage: {
-        color: '#fff',
-        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontWeight: '600',
     },
     unreadTime: {
-        color: '#0084ff',
-        fontWeight: 'bold',
+        color: '#0084FF',
+        fontWeight: '600',
     },
     unreadDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#0084ff',
-        marginLeft: 5,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginLeft: 8,
+        backgroundColor: '#0084FF',
     },
     emptyContainer: {
         alignItems: 'center',
-        marginTop: 50,
+        marginTop: 60,
     },
     emptyText: {
-        fontSize: 18,
-        color: '#e4e6eb',
+        fontSize: 19,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
     emptySubText: {
-        color: '#b0b3b8',
-        marginTop: 5,
+        fontSize: 15,
+        color: '#A0A3A8',
+        marginTop: 8,
     },
 });
 
