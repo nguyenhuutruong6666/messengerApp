@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import LoginScreen from '../screens/LoginScreen';
@@ -61,6 +61,9 @@ const SplashScreen = () => {
                 <Animated.View style={[splash.dot, { opacity: dot2 }]} />
                 <Animated.View style={[splash.dot, { opacity: dot3 }]} />
             </View>
+            {/* Preload ảnh cho LoginScreen để hiển thị tức thì */}
+            <Image source={require('../../assets/logo.png')} style={{ width: 0, height: 0, opacity: 0, position: 'absolute' }} />
+            <Image source={require('../../assets/starry_sky.png')} style={{ width: 0, height: 0, opacity: 0, position: 'absolute' }} />
         </View>
     );
 };
