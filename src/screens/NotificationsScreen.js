@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { getPendingRequests, acceptFriendRequest, rejectFriendRequest, getMyAcceptedRequests } from '../services/friendService';
@@ -53,7 +53,6 @@ const NotificationsScreen = ({ navigation }) => {
     const handleAccept = async (requestId) => {
         try {
             await acceptFriendRequest(requestId);
-            Alert.alert("Thành công", "Đã chấp nhận lời mời!");
             fetchNotifications();
         } catch (error) {
             Alert.alert("Lỗi", error.message);
@@ -73,7 +72,7 @@ const NotificationsScreen = ({ navigation }) => {
         if (item.type === 'friend_request') {
             return (
                 <View style={styles.requestItem}>
-                    <UserAvatar uri={item.sender?.avatar} size={60} style={styles.avatar} />
+                    <UserAvatar uri={item.sender?.avatar} size={64} style={styles.avatar} />
                     <View style={styles.info}>
                         <Text style={styles.text}>
                             <Text style={styles.name}>{item.sender?.fullName}</Text> đã gửi lời mời kết bạn.
@@ -84,10 +83,11 @@ const NotificationsScreen = ({ navigation }) => {
 
                         <View style={styles.actions}>
                             <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item.id)}>
-                                <Text style={styles.btnText}>Đồng ý</Text>
+                                <Ionicons name="person-add" size={16} color="#fff" style={{ marginRight: 6 }} />
+                                <Text style={styles.acceptBtnText}>Đồng ý</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
-                                <Text style={styles.btnText}>Từ chối</Text>
+                                <Text style={styles.rejectBtnText}>Xóa</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -96,16 +96,17 @@ const NotificationsScreen = ({ navigation }) => {
         } else if (item.type === 'friend_accepted') {
             return (
                 <View style={styles.requestItem}>
-                    <UserAvatar uri={item.sender?.avatar} size={60} style={styles.avatar} />
+                    <UserAvatar uri={item.sender?.avatar} size={64} style={styles.avatar} />
                     <View style={styles.info}>
                         <Text style={styles.text}>
-                            <Text style={styles.name}>{item.sender?.fullName}</Text> đã chấp nhận lời mời kết bạn của bạn.
+                            <Text style={styles.name}>{item.sender?.fullName}</Text> đã chấp nhận lời mời kết bạn. Bạn có thể nhắn tin ngay bây giờ!
                         </Text>
                         <Text style={styles.date}>
-                            {item.updatedAt
-                                ? new Date(item.updatedAt).toLocaleString()
-                                : ''}
+                            {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : ''}
                         </Text>
+                    </View>
+                    <View style={styles.iconBadge}>
+                        <Ionicons name="checkmark-circle" size={24} color="#0084ff" />
                     </View>
                 </View>
             );
@@ -116,19 +117,29 @@ const NotificationsScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Thông Báo</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="close" size={30} color="#e4e6eb" />
+                <Text style={styles.title}>Thông báo</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
+                    <Ionicons name="close" size={26} color="#e4e6eb" />
                 </TouchableOpacity>
             </View>
             {loading ? (
-                <ActivityIndicator size="large" color="#0084ff" />
+                <ActivityIndicator size="large" color="#0084ff" style={{ marginTop: 40 }} />
             ) : (
                 <FlatList
                     data={notifications}
                     keyExtractor={item => item.id}
                     renderItem={renderItem}
-                    ListEmptyComponent={<Text style={styles.empty}>Không có thông báo mới.</Text>}
+                    contentContainerStyle={{ paddingBottom: 30 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <View style={styles.emptyIconBg}>
+                                <Ionicons name="notifications-off" size={50} color="#b0b3b8" />
+                            </View>
+                            <Text style={styles.emptyText}>Bạn chưa có thông báo nào</Text>
+                            <Text style={styles.emptySub}>Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.</Text>
+                        </View>
+                    }
                 />
             )}
         </SafeAreaView>
@@ -138,77 +149,127 @@ const NotificationsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 15,
-        backgroundColor: '#18191a',
+        backgroundColor: '#121212',
+        paddingHorizontal: 20,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
+        marginTop: 15,
+        marginBottom: 25,
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 28,
+        fontWeight: '800',
         color: '#e4e6eb',
+        letterSpacing: 0.5,
+    },
+    closeBtn: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: '#242526',
+        justifyContent: 'center', alignItems: 'center',
     },
     requestItem: {
         flexDirection: 'row',
-        marginBottom: 20,
-        backgroundColor: '#242526',
-        padding: 10,
-        borderRadius: 10,
+        marginBottom: 16,
+        backgroundColor: '#1e1e1e',
+        padding: 16,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#3a3b3c',
+        borderColor: '#2c2c2e',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
     },
     avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        marginRight: 10,
+        marginRight: 14,
     },
     info: {
         flex: 1,
+        justifyContent: 'center',
     },
     text: {
-        fontSize: 16,
-        marginBottom: 5,
+        fontSize: 15,
+        lineHeight: 22,
+        marginBottom: 6,
         color: '#e4e6eb',
     },
     name: {
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#ffffff',
+        fontSize: 16,
     },
     date: {
-        color: '#b0b3b8',
-        fontSize: 12,
-        marginBottom: 10,
+        color: '#8e8e93',
+        fontSize: 13,
+        marginBottom: 12,
     },
     actions: {
         flexDirection: 'row',
+        marginTop: 4,
     },
     acceptBtn: {
+        flex: 1,
+        flexDirection: 'row',
         backgroundColor: '#0084ff',
-        paddingVertical: 8,
-        paddingHorizontal: 20,
-        borderRadius: 5,
+        paddingVertical: 10,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
         marginRight: 10,
     },
     rejectBtn: {
+        flex: 1,
         backgroundColor: '#3a3b3c',
-        paddingVertical: 8,
-        paddingHorizontal: 20,
-        borderRadius: 5,
+        paddingVertical: 10,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    btnText: {
+    acceptBtnText: {
         color: '#fff',
         fontWeight: 'bold',
+        fontSize: 15,
     },
-    empty: {
+    rejectBtnText: {
+        color: '#e4e6eb',
+        fontWeight: 'bold',
+        fontSize: 15,
+    },
+    iconBadge: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingLeft: 10,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 80,
+    },
+    emptyIconBg: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#242526',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    emptyText: {
+        color: '#e4e6eb',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+    },
+    emptySub: {
+        color: '#8e8e93',
+        fontSize: 14,
         textAlign: 'center',
-        marginTop: 50,
-        color: '#b0b3b8',
-        fontSize: 16,
+        paddingHorizontal: 40,
+        lineHeight: 20,
     }
 });
 

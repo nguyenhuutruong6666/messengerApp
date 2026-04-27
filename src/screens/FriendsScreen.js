@@ -6,8 +6,7 @@ import { searchUserByPhone, getUserById } from '../services/userService';
 import { sendFriendRequest, getFriends, checkFriendRelationship } from '../services/friendService';
 import UserAvatar from '../components/UserAvatar';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 const FriendsScreen = () => {
     const { user } = useAuth();
@@ -94,6 +93,7 @@ const FriendsScreen = () => {
         if (!relationshipData) {
             actionElement = (
                 <TouchableOpacity style={styles.addButton} onPress={handleSendRequest}>
+                    <Ionicons name="person-add" size={16} color="#fff" style={{ marginRight: 6 }} />
                     <Text style={styles.addButtonText}>Kết bạn</Text>
                 </TouchableOpacity>
             );
@@ -103,19 +103,22 @@ const FriendsScreen = () => {
             if (status === 'accepted') {
                 actionElement = (
                     <View style={styles.alreadyFriendBadge}>
-                        <Text style={styles.alreadyFriendText}>Đã kết bạn</Text>
+                        <Ionicons name="checkmark-circle" size={16} color="#0084ff" style={{ marginRight: 4 }} />
+                        <Text style={styles.alreadyFriendText}>Bạn bè</Text>
                     </View>
                 );
             } else if (status === 'pending') {
                 if (fromUserId === user.uid) {
                     actionElement = (
                         <View style={styles.pendingBadge}>
+                            <Ionicons name="time-outline" size={16} color="#e4e6eb" style={{ marginRight: 4 }} />
                             <Text style={styles.pendingText}>Đã gửi lời mời</Text>
                         </View>
                     );
                 } else {
                     actionElement = (
                         <View style={styles.pendingBadge}>
+                            <Ionicons name="mail-unread-outline" size={16} color="#e4e6eb" style={{ marginRight: 4 }} />
                             <Text style={styles.pendingText}>Họ đã gửi lời mời</Text>
                         </View>
                     );
@@ -123,6 +126,7 @@ const FriendsScreen = () => {
             } else if (status === 'rejected') {
                 actionElement = (
                     <TouchableOpacity style={styles.addButton} onPress={handleSendRequest}>
+                        <Ionicons name="person-add" size={16} color="#fff" style={{ marginRight: 6 }} />
                         <Text style={styles.addButtonText}>Kết bạn</Text>
                     </TouchableOpacity>
                 );
@@ -133,64 +137,93 @@ const FriendsScreen = () => {
     const renderFriendItem = ({ item }) => (
         <TouchableOpacity
             style={styles.friendItem}
+            activeOpacity={0.7}
             onPress={() => navigation.navigate('ChatDetail', { friend: item })}
         >
-            <UserAvatar uri={item.avatar} size={50} style={{ marginRight: 15 }} />
-            <View>
+            <UserAvatar uri={item.avatar} size={54} style={{ marginRight: 15 }} />
+            <View style={styles.friendInfo}>
                 <Text style={styles.friendName}>{item.fullName}</Text>
                 <Text style={styles.friendPhone}>{item.phone}</Text>
             </View>
+            <TouchableOpacity style={styles.chatIconBtn} onPress={() => navigation.navigate('ChatDetail', { friend: item })}>
+                <Ionicons name="chatbubble-ellipses" size={20} color="#0084ff" />
+            </TouchableOpacity>
         </TouchableOpacity>
     );
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Thêm bạn bè</Text>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="close" size={30} color="#e4e6eb" />
+                    <Text style={styles.title}>Bạn bè</Text>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
+                        <Ionicons name="close" size={26} color="#e4e6eb" />
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.searchContainer}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Tìm bạn bằng SĐT..."
-                        placeholderTextColor="#aaa"
-                        value={searchPhone}
-                        onChangeText={setSearchPhone}
-                        keyboardType="phone-pad"
-                    />
-                    <TouchableOpacity style={styles.searchButton} onPress={handleSearch} disabled={searchLoading}>
+
+                <View style={styles.searchSection}>
+                    <View style={styles.searchContainer}>
+                        <Ionicons name="search" size={20} color="#8e8e93" style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Tìm bạn qua số điện thoại..."
+                            placeholderTextColor="#8e8e93"
+                            value={searchPhone}
+                            onChangeText={setSearchPhone}
+                            keyboardType="phone-pad"
+                            returnKeyType="search"
+                            onSubmitEditing={handleSearch}
+                        />
+                        {searchPhone.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchPhone('')} style={styles.clearBtn}>
+                                <Ionicons name="close-circle" size={18} color="#8e8e93" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <TouchableOpacity style={styles.searchButton} onPress={handleSearch} disabled={searchLoading || !searchPhone}>
                         {searchLoading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.searchButtonText}>Tìm</Text>}
                     </TouchableOpacity>
                 </View>
 
+
                 {foundUser && (
                     <View style={styles.foundUserContainer}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                            <UserAvatar uri={foundUser.avatar} size={50} style={{ marginRight: 10 }} />
+                        <View style={styles.foundUserInfo}>
+                            <UserAvatar uri={foundUser.avatar} size={56} style={{ marginRight: 12 }} />
                             <View>
                                 <Text style={styles.foundUserText}>{foundUser.fullName}</Text>
-                                <Text style={{ color: '#aaa', fontSize: 12 }}>Tìm thấy</Text>
+                                <Text style={styles.foundUserSub}>Tìm thấy từ số điện thoại</Text>
                             </View>
                         </View>
                         {actionElement}
                     </View>
                 )}
 
-                <Text style={[styles.title, { marginTop: 30, marginBottom: 15, fontSize: 18 }]}>Danh sách bạn bè ({friends.length})</Text>
+
+                <View style={styles.listHeader}>
+                    <Text style={styles.listTitle}>Tất cả bạn bè</Text>
+                    <View style={styles.badgeCount}>
+                        <Text style={styles.badgeText}>{friends.length}</Text>
+                    </View>
+                </View>
 
                 {loadingFriends ? (
-                    <ActivityIndicator color="#0084ff" style={{ marginTop: 20 }} />
+                    <ActivityIndicator color="#0084ff" style={{ marginTop: 30 }} size="large" />
                 ) : (
                     <FlatList
                         data={friends}
                         keyExtractor={item => item.id}
                         renderItem={renderFriendItem}
-                        ListEmptyComponent={<Text style={styles.emptyText}>Chưa có bạn bè nào.</Text>}
-                        contentContainerStyle={{ paddingBottom: 20 }}
+                        ListEmptyComponent={
+                            <View style={styles.emptyContainer}>
+                                <Ionicons name="people" size={60} color="#3a3b3c" />
+                                <Text style={styles.emptyText}>Chưa có bạn bè nào.</Text>
+                                <Text style={styles.emptySubText}>Hãy tìm kiếm và kết nối với mọi người nhé!</Text>
+                            </View>
+                        }
+                        contentContainerStyle={{ paddingBottom: 30, paddingTop: 10 }}
+                        showsVerticalScrollIndicator={false}
                     />
                 )}
             </SafeAreaView>
@@ -201,120 +234,208 @@ const FriendsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#18191a',
-        padding: 15,
+        backgroundColor: '#121212', // Nền tối cơ bản như messenger
+        paddingHorizontal: 20,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginTop: 15,
+        marginBottom: 25,
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 28,
+        fontWeight: '800',
         color: '#e4e6eb',
+        letterSpacing: 0.5,
+    },
+    closeBtn: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: '#242526',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    searchSection: {
+        flexDirection: 'row',
+        marginBottom: 25,
+        alignItems: 'center',
     },
     searchContainer: {
+        flex: 1,
         flexDirection: 'row',
-        marginBottom: 10,
+        alignItems: 'center',
+        backgroundColor: '#242526',
+        borderRadius: 20, // Bo góc kiểu pill shape
+        height: 48,
+        paddingHorizontal: 15,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#3a3b3c',
+    },
+    searchIcon: {
+        marginRight: 8,
     },
     searchInput: {
         flex: 1,
-        borderWidth: 1,
-        borderColor: '#3a3b3c',
-        borderRadius: 8,
-        padding: 10,
-        marginRight: 10,
-        backgroundColor: '#242526',
         color: '#e4e6eb',
+        fontSize: 16,
+        height: '100%',
+    },
+    clearBtn: {
+        padding: 4,
     },
     searchButton: {
         backgroundColor: '#0084ff',
-        padding: 10,
-        borderRadius: 8,
+        height: 48,
+        paddingHorizontal: 18,
+        borderRadius: 16,
         justifyContent: 'center',
-        minWidth: 60,
         alignItems: 'center',
+        shadowColor: '#0084ff',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 4,
     },
     searchButtonText: {
         color: '#fff',
         fontWeight: 'bold',
+        fontSize: 15,
     },
     foundUserContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 15,
-        backgroundColor: '#242526',
+        padding: 16,
+        backgroundColor: '#1e1e1e',
         borderWidth: 1,
-        borderColor: '#3a3b3c',
-        borderRadius: 8,
-        marginTop: 10,
+        borderColor: '#2c2c2e',
+        borderRadius: 20,
+        marginBottom: 25,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    foundUserInfo: {
+        flexDirection: 'row', alignItems: 'center', flex: 1,
     },
     foundUserText: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: 'bold',
-        color: '#e4e6eb',
+        color: '#ffffff',
+        marginBottom: 4,
+    },
+    foundUserSub: {
+        color: '#8e8e93', fontSize: 13,
     },
     addButton: {
-        backgroundColor: '#00c853',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
+        backgroundColor: '#0084ff',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 16,
     },
     addButtonText: {
         color: '#fff',
         fontWeight: 'bold',
+        fontSize: 14,
     },
     alreadyFriendBadge: {
-        backgroundColor: '#3a3b3c',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#0084ff',
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 132, 255, 0.15)',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 16,
     },
     alreadyFriendText: {
         color: '#0084ff',
         fontWeight: 'bold',
-        fontSize: 12,
-    },
-    friendItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        backgroundColor: '#242526',
-        marginBottom: 8,
-        borderRadius: 10,
-    },
-    friendName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#e4e6eb',
-    },
-    friendPhone: {
         fontSize: 13,
-        color: '#b0b3b8',
-        marginTop: 2,
-    },
-    emptyText: {
-        color: '#b0b3b8',
-        textAlign: 'center',
-        marginTop: 20,
     },
     pendingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#3a3b3c',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#b0b3b8',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 16,
     },
     pendingText: {
         color: '#e4e6eb',
         fontWeight: 'bold',
         fontSize: 12,
+    },
+    listHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    listTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#e4e6eb',
+        marginRight: 10,
+    },
+    badgeCount: {
+        backgroundColor: '#242526',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    badgeText: {
+        color: '#0084ff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    friendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 14,
+        backgroundColor: '#1e1e1e',
+        marginBottom: 12,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#2c2c2e',
+    },
+    friendInfo: {
+        flex: 1,
+    },
+    friendName: {
+        fontSize: 17,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        marginBottom: 4,
+    },
+    friendPhone: {
+        fontSize: 14,
+        color: '#8e8e93',
+    },
+    chatIconBtn: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: 'rgba(0, 132, 255, 0.1)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 60,
+    },
+    emptyText: {
+        color: '#e4e6eb',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    emptySubText: {
+        color: '#8e8e93',
+        fontSize: 14,
+        textAlign: 'center',
+        paddingHorizontal: 40,
     }
 });
 

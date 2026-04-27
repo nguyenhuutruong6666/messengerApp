@@ -16,6 +16,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import NewsScreen from '../screens/NewsScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -61,7 +62,6 @@ const SplashScreen = () => {
                 <Animated.View style={[splash.dot, { opacity: dot2 }]} />
                 <Animated.View style={[splash.dot, { opacity: dot3 }]} />
             </View>
-            {/* Preload ảnh cho LoginScreen để hiển thị tức thì */}
             <Image source={require('../../assets/logo.png')} style={{ width: 0, height: 0, opacity: 0, position: 'absolute' }} />
             <Image source={require('../../assets/starry_sky.png')} style={{ width: 0, height: 0, opacity: 0, position: 'absolute' }} />
         </View>
@@ -178,6 +178,7 @@ const MainNavigator = () => {
             <Stack.Screen name="ChatDetail" component={ChatDetailScreen} options={{ title: 'Đoạn chat' }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };
