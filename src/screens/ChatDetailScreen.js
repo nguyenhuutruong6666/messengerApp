@@ -3,7 +3,7 @@ import {
     View, Text, TextInput, FlatList, TouchableOpacity,
     StyleSheet, Image, KeyboardAvoidingView, Platform,
     ActivityIndicator, Alert, Modal, ScrollView,
-    Dimensions, StatusBar, SafeAreaView,
+    Dimensions, StatusBar, SafeAreaView, Keyboard
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { getChatId, sendMessage, subscribeToMessages, markMessagesAsRead, deleteMessageImage } from '../services/chatService';
@@ -200,6 +200,20 @@ const ChatDetailScreen = ({ route }) => {
     const navigation = useNavigation();
     const headerHeight = useHeaderHeight();
     const chatId = getChatId(user.uid, friend.id);
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+        const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     useEffect(() => {
         navigation.setOptions({
@@ -372,7 +386,7 @@ const ChatDetailScreen = ({ route }) => {
                 )}
 
                 {/* Input bar */}
-                <View style={styles.inputContainerWrapper}>
+                <View style={[styles.inputContainerWrapper, { paddingBottom: isKeyboardVisible ? (Platform.OS === 'ios' ? 10 : 8) : (Platform.OS === 'ios' ? 24 : 12) }]}>
                     <View style={styles.inputContainer}>
                         <TouchableOpacity onPress={pickImages} style={styles.iconButton}>
                             <Ionicons name="image" size={26} color="#0084FF" />
@@ -475,9 +489,16 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
         padding: 0,
     },
-    iconButton: { padding: 8, marginBottom: 2 },
+    iconButton: { 
+        height: 40, 
+        width: 40, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginBottom: 0 
+    },
     input: {
         flex: 1,
+        minHeight: 40,
         maxHeight: 100,
         backgroundColor: '#1E1E1E',
         borderRadius: 20,
@@ -489,7 +510,10 @@ const styles = StyleSheet.create({
         marginHorizontal: 8,
     },
     sendButtonWrapper: {
-        marginBottom: 2,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 0,
     },
     sendButton: {
         width: 36,
