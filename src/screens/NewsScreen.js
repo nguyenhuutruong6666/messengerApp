@@ -433,32 +433,34 @@ const NewsScreen = () => {
                             <View style={styles.selectDropdown}>
                                 <Text style={styles.selectTitle}>Lọc theo người đăng</Text>
 
-                                <TouchableOpacity
-                                    style={[styles.selectOption, filterUserId === null && styles.selectOptionActive]}
-                                    onPress={() => { setFilterUserId(null); setFilterModalVisible(false); }}
-                                >
-                                    <Text style={[styles.selectOptionText, filterUserId === null && styles.selectOptionTextActive]}>Tất cả mọi người</Text>
-                                    {filterUserId === null && <Ionicons name="checkmark" size={20} color="#0084ff" />}
-                                </TouchableOpacity>
-
-                                {filterUsers.map(u => (
+                                <ScrollView showsVerticalScrollIndicator={false}>
                                     <TouchableOpacity
-                                        key={u.id}
-                                        style={[styles.selectOption, filterUserId === u.id && styles.selectOptionActive]}
-                                        onPress={() => { setFilterUserId(u.id); setFilterModalVisible(false); }}
+                                        style={[styles.selectOption, filterUserId === null && styles.selectOptionActive]}
+                                        onPress={() => { setFilterUserId(null); setFilterModalVisible(false); }}
                                     >
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <UserAvatar uri={u.avatar} size={24} style={{ marginRight: 10 }} />
-                                            <Text style={[styles.selectOptionText, filterUserId === u.id && styles.selectOptionTextActive]}>{u.name}</Text>
-                                            {u.isSelf && (
-                                                <View style={styles.selfBadge}>
-                                                    <Ionicons name="checkmark" size={11} color="#fff" />
-                                                </View>
-                                            )}
-                                        </View>
-                                        {filterUserId === u.id && <Ionicons name="checkmark" size={20} color="#0084ff" />}
+                                        <Text style={[styles.selectOptionText, filterUserId === null && styles.selectOptionTextActive]}>Tất cả mọi người</Text>
+                                        {filterUserId === null && <Ionicons name="checkmark" size={20} color="#0084ff" />}
                                     </TouchableOpacity>
-                                ))}
+
+                                    {filterUsers.map(u => (
+                                        <TouchableOpacity
+                                            key={u.id}
+                                            style={[styles.selectOption, filterUserId === u.id && styles.selectOptionActive]}
+                                            onPress={() => { setFilterUserId(u.id); setFilterModalVisible(false); }}
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <UserAvatar uri={u.avatar} size={24} style={{ marginRight: 10 }} />
+                                                <Text style={[styles.selectOptionText, filterUserId === u.id && styles.selectOptionTextActive]}>{u.name}</Text>
+                                                {u.isSelf && (
+                                                    <View style={styles.selfBadge}>
+                                                        <Ionicons name="checkmark" size={11} color="#fff" />
+                                                    </View>
+                                                )}
+                                            </View>
+                                            {filterUserId === u.id && <Ionicons name="checkmark" size={20} color="#0084ff" />}
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
                             </View>
                         </TouchableOpacity>
                     </View>
