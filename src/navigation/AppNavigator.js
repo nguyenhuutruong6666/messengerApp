@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -17,6 +18,8 @@ import ChatDetailScreen from '../screens/ChatDetailScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import NewsScreen from '../screens/NewsScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import VideoCallScreen from '../screens/VideoCallScreen';
+import IncomingCallScreen from '../screens/IncomingCallScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -179,19 +182,38 @@ const MainNavigator = () => {
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="IncomingCall" component={IncomingCallScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };
 
 export default function AppNavigator() {
     const { user, loading } = useAuth();
+    const navigationRef = React.useRef();
+
+    useEffect(() => {
+        // Lắng nghe khi người dùng nhấn vào thông báo (Notification Response)
+        const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+            const data = response.notification.request.content.data;
+            if (data?.type === 'call') {
+                navigationRef.current?.navigate('IncomingCall', {
+                    roomName: data.roomName,
+                    friend: data.friend,
+                    isVideo: data.isVideo
+                });
+            }
+        });
+
+        return () => subscription.remove();
+    }, []);
 
     if (loading) {
         return <SplashScreen />;
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             {user ? <MainNavigator /> : <AuthNavigator />}
         </NavigationContainer>
     );

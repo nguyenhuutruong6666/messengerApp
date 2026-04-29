@@ -64,6 +64,46 @@ export const sendMessage = async (chatId, text, imageUris, senderId, newsReply =
     }
 };
 
+export const startCallNotification = async (chatId, senderId, roomName, isVideo) => {
+    try {
+        const uids = chatId.split('_');
+        const recipientId = uids.find(id => id !== senderId);
+        
+        if (recipientId) {
+            const recipientSnap = await get(ref(db, `users/${recipientId}`));
+            if (recipientSnap.exists()) {
+                const recipientData = recipientSnap.val();
+                if (recipientData.pushToken) {
+                    const senderSnap = await get(ref(db, `users/${senderId}`));
+                    const senderData = senderSnap.val();
+                    const senderName = senderData.fullName || 'Người dùng';
+                    
+                    const callType = isVideo ? 'cuộc gọi video' : 'cuộc gọi thoại';
+                    
+                    await sendPushNotification(
+                        recipientData.pushToken,
+                        senderName,
+                        `Đang gọi cho bạn (${callType})`,
+                        { 
+                            type: 'call', 
+                            chatId, 
+                            roomName, 
+                            isVideo,
+                            friend: {
+                                id: senderId,
+                                fullName: senderName,
+                                avatar: senderData.avatar || null
+                            }
+                        }
+                    );
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error sending call notification:', error);
+    }
+};
+
 export const markMessagesAsRead = async (chatId) => {
     try {
         await update(ref(db, `chats/${chatId}`), { isRead: true });

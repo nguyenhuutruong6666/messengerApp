@@ -3,10 +3,10 @@ import {
     View, Text, TextInput, FlatList, TouchableOpacity,
     StyleSheet, Image, KeyboardAvoidingView, Platform,
     ActivityIndicator, Alert, Modal, ScrollView,
-    Dimensions, StatusBar, SafeAreaView, Keyboard
+    Dimensions, StatusBar, SafeAreaView, Keyboard, Linking
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { getChatId, sendMessage, subscribeToMessages, markMessagesAsRead, deleteMessageImage } from '../services/chatService';
+import { getChatId, sendMessage, subscribeToMessages, markMessagesAsRead, deleteMessageImage, startCallNotification } from '../services/chatService';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import UserAvatar from '../components/UserAvatar';
@@ -220,21 +220,33 @@ const ChatDetailScreen = ({ route }) => {
             title: friend.fullName,
             headerStyle: { backgroundColor: '#121212', shadowColor: 'transparent', elevation: 0 },
             headerTintColor: '#fff',
-            headerRight: () => (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => Alert.alert('Thông báo', 'Tính năng gọi đang phát triển')}
-                        style={{ marginRight: 20 }}
-                    >
-                        <Ionicons name="call" size={24} color="#0084FF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => Alert.alert('Thông báo', 'Tính năng gọi video đang phát triển')}
-                    >
-                        <Ionicons name="videocam" size={24} color="#0084FF" />
-                    </TouchableOpacity>
-                </View>
-            ),
+            headerRight: () => {
+                // Tạo mã phòng duy nhất dựa trên ID của 2 người
+                const generateRoomId = () => {
+                    const ids = [user.uid, friend.id].sort();
+                    return `messta_call_${ids[0]}_${ids[1]}`;
+                };
+
+                const startCall = (isVideo) => {
+                    const roomName = generateRoomId();
+                    // Gửi thông báo cho đối phương
+                    startCallNotification(chatId, user.uid, roomName, isVideo);
+                    
+                    // Chuyển sang màn hình gọi
+                    navigation.navigate('VideoCall', { roomName, friend, isVideo, isCaller: true });
+                };
+
+                return (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+                        <TouchableOpacity
+                            onPress={() => startCall(false)}
+                            style={{ marginRight: 5 }}
+                        >
+                            <Ionicons name="call" size={24} color="#0084FF" />
+                        </TouchableOpacity>
+                    </View>
+                );
+            },
         });
 
         const unsubscribe = subscribeToMessages(chatId, (msgs) => {
@@ -257,6 +269,15 @@ const ChatDetailScreen = ({ route }) => {
 
     const removePreviewImage = (uri) => {
         setImages(prev => prev.filter(u => u !== uri));
+    };
+
+    const handleAccept = (roomName, isVideo) => {
+        navigation.replace('VideoCall', {
+            roomName,
+            friend,
+            isVideo,
+            isCaller: false
+        });
     };
 
     const handleSend = async () => {
