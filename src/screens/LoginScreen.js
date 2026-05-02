@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         paddingHorizontal: 28,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Thêm lớp phủ mờ để dễ đọc text hơn
+        backgroundColor: 'rgba(0, 0, 0, 0.4)', 
     },
     header: {
         alignItems: 'center',

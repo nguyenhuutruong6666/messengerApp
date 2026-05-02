@@ -234,7 +234,7 @@ const FriendsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#121212', // Nền tối cơ bản như messenger
+        backgroundColor: '#121212', 
         paddingHorizontal: 20,
     },
     header: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#242526',
-        borderRadius: 20, // Bo góc kiểu pill shape
+        borderRadius: 20, 
         height: 48,
         paddingHorizontal: 15,
         marginRight: 10,

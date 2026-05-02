@@ -28,7 +28,7 @@ const ImageViewer = ({ visible, images, isMe, initialIndex, onClose, onDelete })
     useEffect(() => {
         if (visible) {
             setIndex(initialIndex);
-            // Use setTimeout to ensure FlatList has layout before scrolling
+            
             setTimeout(() => {
                 if (flatListRef.current && images?.length > initialIndex) {
                     flatListRef.current.scrollToIndex({ index: initialIndex, animated: false });
@@ -194,7 +194,7 @@ const ChatDetailScreen = ({ route }) => {
     const [images, setImages] = useState([]);
     const [sending, setSending] = useState(false);
     const [viewerVisible, setViewerVisible] = useState(false);
-    const [viewerData, setViewerData] = useState(null); // { message, images, isMe }
+    const [viewerData, setViewerData] = useState(null); 
     const [viewerIndex, setViewerIndex] = useState(0);
     const flatListRef = useRef();
     const navigation = useNavigation();
@@ -221,7 +221,7 @@ const ChatDetailScreen = ({ route }) => {
             headerStyle: { backgroundColor: '#121212', shadowColor: 'transparent', elevation: 0 },
             headerTintColor: '#fff',
             headerRight: () => {
-                // Tạo mã phòng duy nhất dựa trên ID của 2 người
+                
                 const generateRoomId = () => {
                     const ids = [user.uid, friend.id].sort();
                     return `messta_call_${ids[0]}_${ids[1]}`;
@@ -229,10 +229,10 @@ const ChatDetailScreen = ({ route }) => {
 
                 const startCall = (isVideo) => {
                     const roomName = generateRoomId();
-                    // Gửi thông báo cho đối phương
+                    
                     startCallNotification(chatId, user.uid, roomName, isVideo);
                     
-                    // Chuyển sang màn hình gọi
+                    
                     navigation.navigate('VideoCall', { roomName, friend, isVideo, isCaller: true });
                 };
 

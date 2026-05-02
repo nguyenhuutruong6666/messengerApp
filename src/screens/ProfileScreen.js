@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     coverPhoto: {
         width: '100%',
         height: 180,
-        backgroundColor: '#242526', // Nền trơn thay vì ảnh
+        backgroundColor: '#242526', 
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
     },
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     },
     profileHeader: {
         alignItems: 'center',
-        marginTop: -65, // Kéo avatar lên đè vào ảnh bìa
+        marginTop: -65, 
         paddingHorizontal: 20,
     },
     avatarWrapper: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     },
     avatarBorder: {
         borderWidth: 4,
-        borderColor: '#121212', // Viền màu trùng với nền dưới để tách biệt khỏi ảnh bìa
+        borderColor: '#121212', 
     },
     avatarOverlay: {
         position: 'absolute', top: 0, left: 0,
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     },
     logoutText: { color: '#ff4b4b', fontSize: 16, fontWeight: 'bold' },
 
-    // Modal Styles
+    
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',

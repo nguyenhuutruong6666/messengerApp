@@ -10,6 +10,7 @@ import { getChatId } from '../services/chatService';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../config/firebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const formatTime = (timestamp) => {
     if (!timestamp) return '';
@@ -199,6 +200,22 @@ const MessagesScreen = ({ navigation }) => {
                     }
                 />
             )}
+
+            {/* AI Chat FAB Button */}
+            <TouchableOpacity
+                style={styles.aiFab}
+                onPress={() => navigation.navigate('AIChat')}
+                activeOpacity={0.85}
+            >
+                <LinearGradient
+                    colors={['#6d28d9', '#7c3aed', '#a78bfa']}
+                    style={styles.aiFabGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    <Ionicons name="sparkles" size={26} color="#fff" />
+                </LinearGradient>
+            </TouchableOpacity>
         </SafeAreaView>
     );
 };
@@ -208,6 +225,23 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#121212',
         paddingTop: 10,
+    },
+    aiFab: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        shadowColor: '#7c3aed',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    aiFabGradient: {
+        width: 58,
+        height: 58,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerTitle: {
         fontSize: 30,

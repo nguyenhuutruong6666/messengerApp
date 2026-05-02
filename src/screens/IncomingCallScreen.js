@@ -51,8 +51,8 @@ const IncomingCallScreen = ({ route }) => {
                         <View style={styles.buttonRow}>
                             {/* Nút từ chối */}
                             <View style={styles.buttonWrapper}>
-                                <TouchableOpacity 
-                                    style={[styles.callButton, styles.declineButton]} 
+                                <TouchableOpacity
+                                    style={[styles.callButton, styles.declineButton]}
                                     onPress={handleDecline}
                                 >
                                     <Ionicons name="close" size={35} color="#fff" />
@@ -62,8 +62,8 @@ const IncomingCallScreen = ({ route }) => {
 
                             {/* Nút chấp nhận */}
                             <View style={styles.buttonWrapper}>
-                                <TouchableOpacity 
-                                    style={[styles.callButton, styles.acceptButton]} 
+                                <TouchableOpacity
+                                    style={[styles.callButton, styles.acceptButton]}
                                     onPress={handleAccept}
                                 >
                                     <Ionicons name="call" size={30} color="#fff" />

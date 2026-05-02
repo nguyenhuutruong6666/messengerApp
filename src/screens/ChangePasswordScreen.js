@@ -51,11 +51,11 @@ const ChangePasswordScreen = ({ navigation }) => {
     const executePasswordChange = async () => {
         setLoading(true);
         try {
-            // Xác thực lại người dùng
+            
             const credential = EmailAuthProvider.credential(user.email, oldPassword);
             await reauthenticateWithCredential(user, credential);
 
-            // Đổi mật khẩu
+            
             await updatePassword(user, newPassword);
 
             Alert.alert('Thành công', 'Đổi mật khẩu thành công!', [

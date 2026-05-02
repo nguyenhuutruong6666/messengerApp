@@ -20,6 +20,7 @@ import NewsScreen from '../screens/NewsScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import VideoCallScreen from '../screens/VideoCallScreen';
 import IncomingCallScreen from '../screens/IncomingCallScreen';
+import AIChatScreen from '../screens/AIChatScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -148,8 +149,8 @@ const MainTabs = () => (
             },
         })}
     >
-        <Tab.Screen name="News" component={NewsScreen} options={{ title: 'Tin tức' }} />
         <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: 'Tin nhắn' }} />
+        <Tab.Screen name="News" component={NewsScreen} options={{ title: 'Tin tức' }} />
         <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Cá nhân' }} />
     </Tab.Navigator>
 );
@@ -184,6 +185,7 @@ const MainNavigator = () => {
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ headerShown: false }} />
             <Stack.Screen name="IncomingCall" component={IncomingCallScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };
@@ -193,7 +195,7 @@ export default function AppNavigator() {
     const navigationRef = React.useRef();
 
     useEffect(() => {
-        // Lắng nghe khi người dùng nhấn vào thông báo (Notification Response)
+        
         const subscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
             if (data?.type === 'call') {
