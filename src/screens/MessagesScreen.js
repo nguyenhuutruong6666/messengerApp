@@ -64,7 +64,7 @@ const MessagesScreen = ({ navigation }) => {
             const load = async () => {
                 try {
 
-                if (!loadedRef.current) setLoading(true);
+                    if (!loadedRef.current) setLoading(true);
 
                     const friendIds = await getFriends(user.uid);
                     if (cancelled) return;
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     },
     aiFab: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 110,
         right: 20,
         shadowColor: '#7c3aed',
         shadowOffset: { width: 0, height: 6 },
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.3,
     },
     listContent: {
-        paddingBottom: 25,
+        paddingBottom: 110,
         paddingHorizontal: 8,
     },
     conversationItem: {

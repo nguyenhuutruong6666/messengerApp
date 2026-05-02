@@ -21,6 +21,7 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import VideoCallScreen from '../screens/VideoCallScreen';
 import IncomingCallScreen from '../screens/IncomingCallScreen';
 import AIChatScreen from '../screens/AIChatScreen';
+import CustomTabBar from '../components/CustomTabBar';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -123,31 +124,8 @@ const AuthNavigator = () => (
 
 const MainTabs = () => (
     <Tab.Navigator
-        screenOptions={({ route }) => ({
-            headerShown: false,
-            headerStyle: { backgroundColor: '#18191a' },
-            headerTintColor: '#fff',
-            tabBarStyle: { backgroundColor: '#18191a', borderTopColor: '#3a3b3c' },
-            tabBarActiveTintColor: '#0084ff',
-            tabBarInactiveTintColor: '#b0b3b8',
-            tabBarIcon: ({ focused, color, size }) => {
-                let iconName;
-
-                if (route.name === 'News') {
-                    iconName = focused ? 'camera' : 'camera-outline';
-                } else if (route.name === 'Messages') {
-                    iconName = focused ? 'chatbubble' : 'chatbubble-outline';
-                } else if (route.name === 'Friends') {
-                    iconName = focused ? 'people' : 'people-outline';
-                } else if (route.name === 'Notifications') {
-                    iconName = focused ? 'notifications' : 'notifications-outline';
-                } else if (route.name === 'Profile') {
-                    iconName = focused ? 'person' : 'person-outline';
-                }
-
-                return <Ionicons name={iconName} size={size} color={color} />;
-            },
-        })}
+        tabBar={props => <CustomTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
     >
         <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: 'Tin nhắn' }} />
         <Tab.Screen name="News" component={NewsScreen} options={{ title: 'Tin tức' }} />
@@ -195,7 +173,7 @@ export default function AppNavigator() {
     const navigationRef = React.useRef();
 
     useEffect(() => {
-        
+
         const subscription = Notifications.addNotificationResponseReceivedListener(response => {
             const data = response.notification.request.content.data;
             if (data?.type === 'call') {

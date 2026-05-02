@@ -293,12 +293,12 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: 50,
+        paddingBottom: 130,
     },
     coverPhoto: {
         width: '100%',
         height: 180,
-        backgroundColor: '#242526', 
+        backgroundColor: '#242526',
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
     },
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     },
     profileHeader: {
         alignItems: 'center',
-        marginTop: -65, 
+        marginTop: -65,
         paddingHorizontal: 20,
     },
     avatarWrapper: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     },
     avatarBorder: {
         borderWidth: 4,
-        borderColor: '#121212', 
+        borderColor: '#121212',
     },
     avatarOverlay: {
         position: 'absolute', top: 0, left: 0,
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     },
     logoutText: { color: '#ff4b4b', fontSize: 16, fontWeight: 'bold' },
 
-    
+
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',

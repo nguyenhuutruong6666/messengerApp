@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { postNews, subscribeToAllNews, deleteNews } from '../services/newsService';
 import { getChatId, sendMessage } from '../services/chatService';
 import { getFriends } from '../services/friendService';
+import { getUserById } from '../services/userService';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 
@@ -57,6 +58,7 @@ const NewsScreen = () => {
     const [filterUserId, setFilterUserId] = useState(null);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
     const [friendIds, setFriendIds] = useState([]);
+    const [filterUsersList, setFilterUsersList] = useState([]);
 
     const [replyText, setReplyText] = useState('');
     const [replySending, setReplySending] = useState(false);
@@ -68,11 +70,32 @@ const NewsScreen = () => {
     useFocusEffect(
         React.useCallback(() => {
             setIsFocused(true);
+
+            if (user?.uid) {
+                getFriends(user.uid).then(async (ids) => {
+                    const uniqueIds = Array.from(new Set(ids));
+                    setFriendIds(uniqueIds);
+
+                    const uidsToFetch = Array.from(new Set([user.uid, ...uniqueIds]));
+                    const usersData = await Promise.all(uidsToFetch.map(id => getUserById(id)));
+
+                    const validUsers = usersData.filter(Boolean).map(u => ({
+                        id: u.id,
+                        name: getLastName(u.fullName),
+                        avatar: u.avatar || null,
+                        isSelf: u.id === user.uid
+                    }));
+
+                    validUsers.sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0));
+                    setFilterUsersList(validUsers);
+                }).catch(() => { });
+            }
+
             return () => {
                 setIsFocused(false);
                 setPhoto(null);
             };
-        }, [])
+        }, [user?.uid])
     );
 
     useEffect(() => {
@@ -82,11 +105,12 @@ const NewsScreen = () => {
         return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        if (user?.uid) {
-            getFriends(user.uid).then(ids => setFriendIds(ids)).catch(() => { });
-        }
-    }, [user?.uid]);
+    const getLastName = (fullName) => {
+        if (!fullName) return 'Người dùng';
+        const parts = fullName.trim().split(' ');
+        return parts[parts.length - 1];
+    };
+
 
     useEffect(() => {
         setReplyText('');
@@ -235,11 +259,6 @@ const NewsScreen = () => {
         }
     };
 
-    const getLastName = (fullName) => {
-        if (!fullName) return 'Người dùng';
-        const parts = fullName.trim().split(' ');
-        return parts[parts.length - 1];
-    };
 
     const formatTime = (timestamp) => {
         if (!timestamp) return '';
@@ -253,20 +272,7 @@ const NewsScreen = () => {
     };
 
     const allowedUserIds = new Set([user.uid, ...friendIds]);
-    const filterUsers = [];
-    const userMap = new Set();
-    newsList.forEach(news => {
-        if (!userMap.has(news.userId) && news.userInfo && allowedUserIds.has(news.userId)) {
-            userMap.add(news.userId);
-            filterUsers.push({
-                id: news.userId,
-                name: getLastName(news.userInfo.fullName),
-                avatar: news.userInfo.avatar,
-                isSelf: news.userId === user.uid,
-            });
-        }
-    });
-    filterUsers.sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0));
+    const filterUsers = filterUsersList;
 
     const displayedNews = filterUserId
         ? newsList.filter(n => n.userId === filterUserId)
@@ -289,27 +295,28 @@ const NewsScreen = () => {
                     <View style={styles.cameraWrapper}>
                         <Image source={{ uri: photo }} style={styles.preview} />
                     </View>
-                </View>
 
-                <View style={styles.previewActions}>
-                    <TouchableOpacity style={styles.actionButton} onPress={retakePicture} disabled={uploading}>
-                        <Ionicons name="trash-outline" size={24} color="#fff" />
-                        <Text style={styles.actionText}>Xóa</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.primaryButton, uploading && { opacity: 0.7 }]}
-                        onPress={handleSavePicture}
-                        disabled={uploading}
-                    >
-                        {uploading ? (
-                            <ActivityIndicator color="#000" size="small" />
-                        ) : (
-                            <>
-                                <Ionicons name="send" size={20} color="#000" />
-                                <Text style={[styles.actionText, { color: '#000', fontWeight: 'bold' }]}>Đăng tin</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+                    {/* Di chuyển vào đây để gần ảnh hơn */}
+                    <View style={[styles.previewActions, { backgroundColor: 'transparent', width: '100%', height: 'auto', marginTop: 30, paddingBottom: 0 }]}>
+                        <TouchableOpacity style={styles.actionButton} onPress={retakePicture} disabled={uploading}>
+                            <Ionicons name="trash-outline" size={24} color="#fff" />
+                            <Text style={styles.actionText}>Xóa</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.primaryButton, uploading && { opacity: 0.7 }]}
+                            onPress={handleSavePicture}
+                            disabled={uploading}
+                        >
+                            {uploading ? (
+                                <ActivityIndicator color="#000" size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons name="send" size={20} color="#000" />
+                                    <Text style={[styles.actionText, { color: '#000', fontWeight: 'bold' }]}>Đăng tin</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </SafeAreaView>
         );
@@ -619,9 +626,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     bottomSection: {
-        height: 180,
         backgroundColor: '#050505',
-        justifyContent: 'center',
+        paddingTop: 15,
+        paddingBottom: 120,        // đẩy nội dung lên trên vòng tròn icon tab bar (~117px)
         borderTopWidth: 1,
         borderTopColor: '#1a1a1a',
         borderTopLeftRadius: 30,
@@ -632,6 +639,7 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 20,
     },
+
     bottomControlsRow: {
         flexDirection: 'row',
         justifyContent: 'space-evenly',
@@ -700,12 +708,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     previewActions: {
-        height: 120,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 30,
-        backgroundColor: '#000',
     },
     actionButton: {
         flexDirection: 'row',

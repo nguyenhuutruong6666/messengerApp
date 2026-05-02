@@ -233,7 +233,7 @@ const ChatDetailScreen = ({ route }) => {
                     startCallNotification(chatId, user.uid, roomName, isVideo);
                     
                     
-                    navigation.navigate('VideoCall', { roomName, friend, isVideo, isCaller: true });
+                    navigation.navigate('VideoCall', { roomName, friend, isVideo, isCaller: true, chatId });
                 };
 
                 return (
